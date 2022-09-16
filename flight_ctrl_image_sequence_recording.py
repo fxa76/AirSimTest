@@ -3,13 +3,39 @@ import time
 
 import cv2
 import numpy as np
+import time
 
 import airsim
-from FindHomographyORB_GPU import find_homography
+from findHomographyORB_GPU import find_homography
+
+class FileWriter():
+    def __init__(self,stack):
+        self.stack = stack
+        self.start()
+        pass
+
+    def __del__(self):
+        print("calling destructor")
+
+    def start(self):
+        seq = 0
+        while True:
+
+            if len(self.stack) > 0 :
+                print("stck length{}".format(len(self.stack)))
+                response_image = self.stack.pop()
+                np_response_image = np.asarray(bytearray(response_image), dtype="uint8")
+                decoded_frame = cv2.imdecode(np_response_image, cv2.IMREAD_COLOR)
+
+                if decoded_frame is not None:
+                    cv2.imwrite('./movie/{}.png'.format(str(seq).zfill(5)), decoded_frame)
+                    seq = seq + 1
+
 
 class VideoCapture:
 
-    def __init__(self ):
+    def __init__(self,stack ):
+        self.stack = stack
         simclient = airsim.MultirotorClient()
         simclient.confirmConnection()
         self.client = simclient
@@ -27,16 +53,11 @@ class VideoCapture:
         DECODE_EXTENSION = '.jpg'
         # img1 = cv2.imread("target2.png")
 
-        seq = 0
+
         while self.continue_flag:
             response_image = self.client.simGetImage(CAMERA_NAME, IMAGE_TYPE)
-            np_response_image = np.asarray(bytearray(response_image), dtype="uint8")
-            decoded_frame = cv2.imdecode(np_response_image, cv2.IMREAD_COLOR)
-
-
-            if decoded_frame is not None:
-                cv2.imwrite('./movie/{}.png'.format(str(seq).zfill(5)), decoded_frame)
-                seq=seq+1
+            self.stack.append(response_image)
+            #time.sleep(0.2)
 
 def flyandrecord():
     z = 5
@@ -85,4 +106,6 @@ def flyandrecord():
     print("done.")
 
 if __name__ == '__main__':
-    capture = VideoCapture()
+    stack = []
+    capture = VideoCapture(stack)
+    fileWriter = FileWriter(stack)
