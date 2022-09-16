@@ -44,8 +44,8 @@ def find_homography(img1, img2):
     kpts2 = orb.convert(kpts2)
 
     ## extract the matched keypoints
-    src_pts  = np.float32([kpts1[m.queryIdx].pt for m in matches]).reshape(-1,1,2)
-    dst_pts  = np.float32([kpts2[m.trainIdx].pt for m in matches]).reshape(-1,1,2)
+    src_pts = np.float32([kpts1[m.queryIdx].pt for m in matches]).reshape(-1,1,2)
+    dst_pts = np.float32([kpts2[m.trainIdx].pt for m in matches]).reshape(-1,1,2)
 
     ## find homography matrix and do perspective transform
     M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC,5.0)
@@ -63,10 +63,10 @@ def find_homography(img1, img2):
     return res
 
 if __name__ == '__main__':
-    imgPath1 = "./test_data/target2.png"# query image (small object)
-    imgPath2 = "./test_data/view2.png" # train image (large scene)
+    imgPath1 = "./test_data/target_complex_H.png"# query image (small object)
+    imgPath2 = "./test_data/view_complex_H_02.png" # train image (large scene)
     img1 = cv2.imread(imgPath1)
     img2 = cv2.imread(imgPath2)
     res = find_homography(img1,img2)
-    cv2.imshow("orb_match", res);
+    cv2.imshow("orb_match", res)
     cv2.waitKey();cv2.destroyAllWindows()
