@@ -1,7 +1,7 @@
 import time
-from uncertainties import ufloat
 
 from video_from_drone import VideoCapture, FileWriter
+
 #import os
 
 #os.environ['MAVLINK20']='1'
@@ -10,7 +10,7 @@ from pymavlink import mavutil
 
 print(">>CONNECTING TO DRONE<<")
 
-master = mavutil.mavlink_connection("udp:192.168.1.18:14560") #in Arducopter cmd type: output add 192.168.1.18:14560
+master = mavutil.mavlink_connection("udp:192.168.1.30:14560") #in Arducopter cmd type: output add 192.168.1.18:14560
 
 master.mav.ping_send(
     int(time.time() * 1e6), # Unix time in microseconds
@@ -44,9 +44,14 @@ def move_to_frd_ned(f,r,d):
             print("arrived")
             arrived = True
 
+print("starting video")
+stack = []
+capture = VideoCapture(stack)
+fileWriter = FileWriter(stack)
+
 move_to_frd_ned(0,0,-20)
-move_to_frd_ned(10,10,-10)
-move_to_frd_ned(10,-10,-10)
+move_to_frd_ned(10,10,-20)
+move_to_frd_ned(10,-10,-20)
 move_to_frd_ned(-10,-10,-10)
 move_to_frd_ned(-10,10,-10)
 move_to_frd_ned(0,0,-10)
