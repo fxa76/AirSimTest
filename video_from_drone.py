@@ -7,17 +7,20 @@ import time
 
 import airsim
 from findHomographyORB_GPU import find_homography
+from arucode_decoder import Arucode_Decoder
 
 class FileWriter():
     def __init__(self,stack):
         self.stack = stack
         thread = threading.Thread(target=self.start, )
         thread.start()
+        self.decoder = Arucode_Decoder()
 
     def __del__(self):
         print("calling destructor")
 
     def start(self):
+
         seq = 0
         while True:
 
@@ -29,6 +32,7 @@ class FileWriter():
 
                 if decoded_frame is not None:
                     # print("display")
+                    decoded_frame = self.decoder.decode(decoded_frame)
                     cv2.imshow("Drone camera",decoded_frame)
                     if cv2.waitKey(1) == ord("q"):
                         cv2.destroyAllWindows()
