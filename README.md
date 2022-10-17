@@ -7,6 +7,9 @@ note : to get parameter of AirSim camera use this code :
 client.simGetCameraInfo(str(camera_id))
 ```
 
+# ardupilot 
+output add 192.168.1.18:14560
+param load ../Tools/autotest/default_params/airsim-quadX.parm
 
 # references
 Computer vision book http://szeliski.org/Book/
