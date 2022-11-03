@@ -59,8 +59,9 @@ class Arucode_Decoder():
 
                 #rmat, jacobian = cv2.Rodrigues(rvec)
                 #print(rmat)
+                '''
                 points_to_daw_3Dcoords = np.float32([[10,10,0],[20, 0, 0], [0, 20, 0], [0, 0, 20]]).reshape(-1, 3)
-                points_to_daw_2Dcoords, jacobian = cv2.projectPoints(points_to_daw_3Dcoords, rvec, tvec, self.cameraMatrix, self.qdistortionCoeffs)
+                points_to_daw_2Dcoords, jacobian = cv2.projectPoints(points_to_daw_3Dcoords, rvec, tvec, self.cameraMatrix, self.distortionCoeffs)
                 for p in points_to_daw_2Dcoords:
                     cv2.circle(frame, (int(p[0][0]),int(p[0][1])), 2, (0,124,124), 20)
 
@@ -69,7 +70,7 @@ class Arucode_Decoder():
                 cv2.line(frame, topRight, bottomRight, (0, 255, 0), 2)
                 cv2.line(frame, bottomRight, bottomLeft, (0, 255, 0), 2)
                 cv2.line(frame, bottomLeft, topLeft, (255, 255, 0), 2)
-
+                '''
                 # compute and draw the center (x, y)-coordinates of the
                 # ArUco marker
                 cX = int((topLeft[0] + bottomRight[0]) / 2.0)
