@@ -20,19 +20,22 @@ class Arucode_Decoder():
         imsize = (1024, 768)
         self.cameraMatrix = cv2.getDefaultNewCameraMatrix(np.diag([1024, 768, 1]), imsize, True)
         self.distortionCoeffs = np.ndarray([0])
-        self.marker_length = 50
+        self.marker_length = 0.50 #meters
 
     def decode(self,frame):
         Line_Pts=None
         Dist = [None,None]
         # loop over the frames from the video stream
 
-        frame = imutils.resize(frame, width=1024)
+       #frame = imutils.resize(frame, width=1024)
 
         # detect ArUco markers in the input frame
         (corners, ids, rejected) = cv2.aruco.detectMarkers(frame,self.arucoDict, parameters=self.arucoParams)
         cX = None
         cY = None
+        tvec = None
+        rvec = None
+
         # verify *at least* one ArUco marker was detected
         if len(corners) > 0:
             # flatten the ArUco IDs list
@@ -54,13 +57,13 @@ class Arucode_Decoder():
 
                 # draw the axis
                 rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(markerCorner, self.marker_length, self.cameraMatrix, distCoeffs=None)
-                print(rvec)
-                print(tvec)
+                # print(rvec)
+                # print(tvec)
                 cv2.drawFrameAxes(frame, self.cameraMatrix, None, rvec, tvec, 10, 3)
 
                 #rmat, jacobian = cv2.Rodrigues(rvec)
                 #print(rmat)
-                '''
+
                 points_to_daw_3Dcoords = np.float32([[10,10,0],[20, 0, 0], [0, 20, 0], [0, 0, 20]]).reshape(-1, 3)
                 points_to_daw_2Dcoords, jacobian = cv2.projectPoints(points_to_daw_3Dcoords, rvec, tvec, self.cameraMatrix, self.distortionCoeffs)
                 for p in points_to_daw_2Dcoords:
@@ -71,7 +74,7 @@ class Arucode_Decoder():
                 cv2.line(frame, topRight, bottomRight, (0, 255, 0), 2)
                 cv2.line(frame, bottomRight, bottomLeft, (0, 255, 0), 2)
                 cv2.line(frame, bottomLeft, topLeft, (255, 255, 0), 2)
-                '''
+
                 # compute and draw the center (x, y)-coordinates of the
                 # ArUco marker
                 cX = int((topLeft[0] + bottomRight[0]) / 2.0)
@@ -84,4 +87,4 @@ class Arucode_Decoder():
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.5, (0, 255, 0), 2)
 
-        return frame, cX, cY, corners,rvec,tvec
+        return frame, rvec,tvec

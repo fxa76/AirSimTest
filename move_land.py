@@ -81,63 +81,27 @@ def land():
         if len(landing_target)>0:
             #print(len(landing_target))
             data = landing_target.pop()
-            print(data)
-            x = data[0]
-            y = data[1]
-            corners = data[2]
-            (topLeft, topRight, bottomRight, bottomLeft) = corners
-
-            # convert each of the (x, y)-coordinate pairs to integers
-            topRight = (int(topRight[0]), int(topRight[1]))
-            bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
-            bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
-            topLeft = (int(topLeft[0]), int(topLeft[1]))
-
-            width = abs(topRight[1] - topLeft[1])
-            print(width)
-
-            # https://github.com/floft/vision-landing/blob/master/autopilot_communication_processes.py
-            horizontal_fov = 90
-            vertical_fov = 90
-            horizontal_fov = horizontal_fov / 180 * math.pi
-            vertical_fov = vertical_fov / 180 * math.pi
-            horizontal_resolution = 1024
-            vertical_resolution = 768
-            angle_x = (x - horizontal_resolution / 2) * horizontal_fov / horizontal_resolution
-            angle_y = (y - vertical_resolution / 2) * vertical_fov / vertical_resolution
-            # angle_x, angle_y = rotate(angle_x, angle_y)
-            target_size = 50
-            size_x = width  * horizontal_fov / horizontal_resolution
-            larger_size = size_x
-
-            height = (target_size / 2) / math.tan(larger_size / 2)
-            print("angle x {}, angle y {}, height {}".format(angle_x,angle_y,height))
-            '''
-            master.mav.landing_target_send(
-                mavutil.mavlink.MAV_FRAME_BODY_FRD,  # frame (not used)
-                10,
-                10,
-                10,
-                0,
-                2,
-                0,
-                0)
-            '''
-            master.mav.landing_target_send(
+            rvec = data[0]
+            tvec = data[1]
+            if tvec is None:
+                pass
+            else:
+                print("{},{},{}".format(tvec[0][0][0], tvec[0][0][1], tvec[0][0][2]))
+                master.mav.landing_target_send(
                                         0, #time_usec
                                         1, #target_num
-                                        mavutil.mavlink.MAV_FRAME_BODY_NED, # MAV Frame
-                                        angle_x, #angle_x
-                                        angle_y, #angle_y
-                                        height,#distance
+                                        mavutil.mavlink.MAV_FRAME_BODY_FRD, # MAV Frame
+                                        0, #angle_x
+                                        0, #angle_y
+                                        tvec[0][0][2],#distance height
                                         0.1, #size_x
                                         0.1, #size_y
-                                        0, #x**
-                                        0, # y**
-                                        0, # z**
+                                        0.25-tvec[0][0][1], # x** forward
+                                        tvec[0][0][0]+0.25, #y** right
+                                        tvec[0][0][2], # z** height
                                         [1,0,0,0], #q**
                                         mavutil.mavlink.LANDING_TARGET_TYPE_VISION_FIDUCIAL,
-                                        0)
+                                        1)
 
 
 print("starting video")

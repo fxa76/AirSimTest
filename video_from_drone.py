@@ -33,8 +33,8 @@ class FileWriter():
 
                 if decoded_frame is not None:
                     # print("display")
-                    decoded_frame, cX, cY, corners, rvec, tvec = self.decoder.decode(decoded_frame)
-                    self.targetStack.append([cX,cY, corners])
+                    decoded_frame, rvec, tvec = self.decoder.decode(decoded_frame)
+                    self.targetStack.append([rvec, tvec])
                     cv2.imshow("Drone camera",decoded_frame)
                     if cv2.waitKey(1) == ord("q"):
                         cv2.destroyAllWindows()
