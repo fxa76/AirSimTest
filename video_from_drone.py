@@ -4,7 +4,7 @@ import time
 import cv2
 import numpy as np
 import time
-
+import imutils
 import airsim
 from findHomographyORB_GPU import find_homography
 from arucode_decoder import Arucode_Decoder
@@ -35,7 +35,8 @@ class FileWriter():
                     # print("display")
                     decoded_frame, rvec, tvec = self.decoder.decode(decoded_frame)
                     self.targetStack.append([rvec, tvec])
-                    cv2.imshow("Drone camera",decoded_frame)
+                    img = imutils.resize(decoded_frame, width=600)
+                    cv2.imshow("Drone camera",img)
                     if cv2.waitKey(1) == ord("q"):
                         cv2.destroyAllWindows()
                         exit(0)
