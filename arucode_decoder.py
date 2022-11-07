@@ -27,11 +27,12 @@ class Arucode_Decoder():
         Dist = [None,None]
         # loop over the frames from the video stream
 
-        frame = imutils.resize(frame, width=1000)
+        frame = imutils.resize(frame, width=1024)
 
         # detect ArUco markers in the input frame
         (corners, ids, rejected) = cv2.aruco.detectMarkers(frame,self.arucoDict, parameters=self.arucoParams)
-
+        cX = None
+        cY = None
         # verify *at least* one ArUco marker was detected
         if len(corners) > 0:
             # flatten the ArUco IDs list
@@ -83,4 +84,4 @@ class Arucode_Decoder():
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.5, (0, 255, 0), 2)
 
-        return frame
+        return frame, cX, cY, corners,rvec,tvec

@@ -10,8 +10,9 @@ from findHomographyORB_GPU import find_homography
 from arucode_decoder import Arucode_Decoder
 
 class FileWriter():
-    def __init__(self,stack):
+    def __init__(self,stack,targetStack):
         self.stack = stack
+        self.targetStack = targetStack
         thread = threading.Thread(target=self.start, )
         thread.start()
         self.decoder = Arucode_Decoder()
@@ -32,7 +33,8 @@ class FileWriter():
 
                 if decoded_frame is not None:
                     # print("display")
-                    decoded_frame = self.decoder.decode(decoded_frame)
+                    decoded_frame, cX, cY, corners, rvec, tvec = self.decoder.decode(decoded_frame)
+                    self.targetStack.append([cX,cY, corners])
                     cv2.imshow("Drone camera",decoded_frame)
                     if cv2.waitKey(1) == ord("q"):
                         cv2.destroyAllWindows()
