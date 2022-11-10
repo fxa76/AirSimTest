@@ -1,7 +1,9 @@
 import time
 import math
+import numpy as np
 
 from video_from_drone import VideoCapture, FileWriter
+from scipy.spatial.transform import Rotation
 
 #import os
 
@@ -74,8 +76,6 @@ def move_to_frd_ned(f,r,d):
 def land():
     print(">>>>>>>>>>LANDING<<<<<<<<<<<<<")
 
-
-
     arrived = False
     while not arrived:
         if len(landing_target)>0:
@@ -83,25 +83,55 @@ def land():
             data = landing_target.pop()
             rvec = data[0]
             tvec = data[1]
-            if tvec is None:
-                pass
-            else:
-                print("{},{},{}".format(tvec[0][0][0], tvec[0][0][1], tvec[0][0][2]))
+            t_vec_big = data[2]
+            t_vec_small = data[3]
+            r_vec_big = data[4]
+            t_vec_used = None
+            using= "None"
+            if t_vec_big is not None:
+                t_vec_used = t_vec_big
+                using = "Big"
+            if t_vec_small is not None:
+                t_vec_used = t_vec_small
+                using = "Small"
+            if t_vec_used is not None:
+                '''save working on aruco
+                height = tvec[0][0][2]
+                forward = 0.25-tvec[0][0][1]
+                right = tvec[0][0][0]+0.25
+                '''
+                height = t_vec_used[2][0]
+                forward = -t_vec_used[1][0]
+                right = t_vec_used[0][0]
+
+                r_vec_big = np.asarray(r_vec_big)
+                r= Rotation.from_matrix(r_vec_big)
+                angles = r.as_euler("xyz",degrees=True)
+                quat = r.as_quat()
+                print("rot {}".format(angles))
+                print("quat {}".format(quat))
+                quat[0]=quat[0]*100
+                quat[1] = quat[1] * 100
+                quat[2] = quat[2] * 100
+                quat[3] = quat[3] * 100
+                print("quat {}".format(quat))
+                #print("{}: {},{},{}".format(using, forward, right, height))
                 master.mav.landing_target_send(
                                         0, #time_usec
                                         1, #target_num
                                         mavutil.mavlink.MAV_FRAME_BODY_FRD, # MAV Frame
                                         0, #angle_x
                                         0, #angle_y
-                                        tvec[0][0][2],#distance height
-                                        0.1, #size_x
-                                        0.1, #size_y
-                                        0.25-tvec[0][0][1], # x** forward
-                                        tvec[0][0][0]+0.25, #y** right
-                                        tvec[0][0][2], # z** height
-                                        [1,0,0,0], #q**
+                                        height,#distance height
+                                        0.5, #size_x
+                                        0.5, #size_y
+                                        forward, # x** forward
+                                        right, #y** right
+                                        height, # z** height
+                                        quat, #q** no rotation [1,0,0,0]
                                         mavutil.mavlink.LANDING_TARGET_TYPE_VISION_FIDUCIAL,
                                         1)
+
 
 
 print("starting video")
@@ -110,13 +140,5 @@ landing_target = []
 capture = VideoCapture(stack)
 fileWriter = FileWriter(stack,landing_target)
 
-move_to_frd_ned(0,0,-25)
+#move_to_frd_ned(0,0,-50)
 land()
-
-
-'''
-
-master.mav.send(mavutil.mavlink.MAVLink_set_position_target_global_int_message(10,master.target_system,
-                                                                      master.target_component,mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                                                                              int(0b11011111000),int(-35.3629849 * 10 **7),int(149.1649185 * 10 **7),10,0,0,0,0,0,0,0,0))
-'''
