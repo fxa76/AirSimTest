@@ -131,7 +131,15 @@ def land():
                                         quat, #q** no rotation [1,0,0,0]
                                         mavutil.mavlink.LANDING_TARGET_TYPE_VISION_FIDUCIAL,
                                         1)
+                yaw = angles[2]
+                direction = 1
+                if yaw < 0:
+                    yaw = abs(yaw)
+                    direction= -1
 
+                master.mav.command_long_send(master.target_system, master.target_component,
+                                             mavutil.mavlink.MAV_CMD_CONDITION_YAW, 0,
+                                             int(yaw), 5, direction, 1, 0, 0, 0, 0)
 
 
 print("starting video")
