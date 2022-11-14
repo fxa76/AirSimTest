@@ -1,7 +1,7 @@
 import time
 import math
 import numpy as np
-
+import os
 from video_from_drone import VideoCapture, FileWriter
 from scipy.spatial.transform import Rotation
 
@@ -73,6 +73,33 @@ def move_to_frd_ned(f,r,d):
             print("arrived")
             arrived = True
 
+def rotate_cc_to(rotation_z,direction):
+    print("rotating")
+    msg = master.recv_match(type='ATTITUDE', blocking=True)
+    start_yaw = math.degrees(msg.yaw)
+    print("start yaw {}".format(start_yaw))
+    target_yaw = start_yaw + direction * rotation_z
+    if target_yaw > 180 :
+        target_yaw = target_yaw - 360
+    if target_yaw < -180 :
+        target_yaw = target_yaw + 360
+    print("target yaw {}".format(target_yaw))
+
+    master.mav.command_long_send(master.target_system, master.target_component,
+                                 mavutil.mavlink.MAV_CMD_CONDITION_YAW, 0,
+                                 int(rotation_z), 5, direction, 1, 0, 0, 0, 0)
+
+    arrived = False
+    while not arrived:
+        msg = master.recv_match(type='ATTITUDE', blocking=True)  #
+        current_yaw = math.degrees(msg.yaw)
+        if current_yaw > 180:
+            current_yaw = current_yaw - 360
+        print(current_yaw)
+        if between_two_numbers(current_yaw,target_yaw-5,target_yaw+5):
+            print("arrived")
+            arrived = True
+
 def land():
     print(">>>>>>>>>>LANDING<<<<<<<<<<<<<")
 
@@ -81,18 +108,22 @@ def land():
         if len(landing_target)>0:
             #print(len(landing_target))
             data = landing_target.pop()
-            rvec = data[0]
-            tvec = data[1]
-            t_vec_big = data[2]
-            t_vec_small = data[3]
-            r_vec_big = data[4]
+
+            t_vec_big = data[0]
+            t_vec_small = data[1]
+            r_vec_big = data[2]
+            r_vec_small = data[2]
+
             t_vec_used = None
+            r_vec_used = None
             using= "None"
             if t_vec_big is not None:
                 t_vec_used = t_vec_big
+                r_vec_used = r_vec_big
                 using = "Big"
             if t_vec_small is not None:
                 t_vec_used = t_vec_small
+                r_vec_used = r_vec_small
                 using = "Small"
             if t_vec_used is not None:
                 '''save working on aruco
@@ -104,42 +135,39 @@ def land():
                 forward = -t_vec_used[1][0]
                 right = t_vec_used[0][0]
 
-                r_vec_big = np.asarray(r_vec_big)
-                r= Rotation.from_matrix(r_vec_big)
-                angles = r.as_euler("xyz",degrees=True)
-                quat = r.as_quat()
-                print("rot {}".format(angles))
-                print("quat {}".format(quat))
-                quat[0]=quat[0]*100
-                quat[1] = quat[1] * 100
-                quat[2] = quat[2] * 100
-                quat[3] = quat[3] * 100
-                print("quat {}".format(quat))
-                #print("{}: {},{},{}".format(using, forward, right, height))
-                master.mav.landing_target_send(
-                                        0, #time_usec
-                                        1, #target_num
-                                        mavutil.mavlink.MAV_FRAME_BODY_FRD, # MAV Frame
-                                        0, #angle_x
-                                        0, #angle_y
-                                        height,#distance height
-                                        0.5, #size_x
-                                        0.5, #size_y
-                                        forward, # x** forward
-                                        right, #y** right
-                                        height, # z** height
-                                        quat, #q** no rotation [1,0,0,0]
-                                        mavutil.mavlink.LANDING_TARGET_TYPE_VISION_FIDUCIAL,
-                                        1)
-                yaw = angles[2]
-                direction = 1
-                if yaw < 0:
-                    yaw = abs(yaw)
-                    direction= -1
+                if r_vec_used is not None:
+                    r_vec_used = np.asarray(r_vec_used)
+                    r= Rotation.from_matrix(r_vec_used)
+                    angles = r.as_euler("xyz",degrees=True)
+                    #quat = r.as_quat()
+                    print("rot {}".format(angles))
+                    #print("{}: {},{},{}".format(using, forward, right, height))
 
-                master.mav.command_long_send(master.target_system, master.target_component,
-                                             mavutil.mavlink.MAV_CMD_CONDITION_YAW, 0,
-                                             int(yaw), 5, direction, 1, 0, 0, 0, 0)
+                    master.mav.landing_target_send(
+                                            0, #time_usec
+                                            1, #target_num
+                                            mavutil.mavlink.MAV_FRAME_BODY_FRD, # MAV Frame
+                                            0, #angle_x
+                                            0, #angle_y
+                                            height,#distance height
+                                            0.5, #size_x
+                                            0.5, #size_y
+                                            forward, # x** forward
+                                            right, #y** right
+                                            height, # z** height
+                                            [1,0,0,0], #q** no rotation [1,0,0,0] quat not having effect
+                                            mavutil.mavlink.LANDING_TARGET_TYPE_VISION_FIDUCIAL,
+                                            1)
+
+                    yaw = angles[2]
+                    direction = 1
+                    if yaw < 0:
+                        yaw = abs(yaw)
+                        direction= -1
+
+                    master.mav.command_long_send(master.target_system, master.target_component,
+                                                 mavutil.mavlink.MAV_CMD_CONDITION_YAW, 0,
+                                                 int(yaw), 1.8  , direction, 1, 0, 0, 0, 0)
 
 
 print("starting video")
@@ -148,5 +176,44 @@ landing_target = []
 capture = VideoCapture(stack)
 fileWriter = FileWriter(stack,landing_target)
 
+'''
 #move_to_frd_ned(0,0,-50)
+#mode guide
+master.mav.command_long_send(master.target_system, master.target_component,
+                                                 mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
+                                                 1, 4, 0, 0, 0, 0, 0, 0)
+msg = master.wait_heartbeat()
+print("hb {}".format(msg))
+#ARM
+master.mav.command_long_send(master.target_system, master.target_component,
+                                                 mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0,
+                                                 1, 0, 0, 0, 0, 0, 0, 0)
+'''
+#takeoff 20
+print("sned takeoff")
+master.mav.command_long_send(master.target_system, master.target_component,
+                                                 mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0,
+                                                 0, 0, 0, 0, 0, 0, 20)
+cmd_accepted = False
+while cmd_accepted:
+    msg = master.recv_match(type='COMMAND_ACK',blocking=True) #
+    print(msg)
+
+arrived = False
+while not arrived:
+    msg = master.recv_match(type='LOCAL_POSITION_NED',blocking=True) #
+    print(msg)
+    if between_two_numbers(msg.z,-20.30,-19.70) :
+        print("arrived")
+        arrived = True
+
+move_to_frd_ned(1,2,-20)
+
+rotate_cc_to(40,-1)
+
+master.mav.command_long_send(master.target_system, master.target_component,
+                                                 mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
+                                                 1, 9, 0, 0, 0, 0, 0, 0)
+
+
 land()
