@@ -116,14 +116,18 @@ def land():
 
             t_vec_used = None
             r_vec_used = None
+
+            angle_rate_used = None
             using= "None"
             if t_vec_big is not None:
                 t_vec_used = t_vec_big
                 r_vec_used = r_vec_big
+                angle_rate_used = 5.0
                 using = "Big"
             if t_vec_small is not None:
                 t_vec_used = t_vec_small
                 r_vec_used = r_vec_small
+                angle_rate_used = 1.0
                 using = "Small"
             if t_vec_used is not None:
                 '''save working on aruco
@@ -140,7 +144,7 @@ def land():
                     r= Rotation.from_matrix(r_vec_used)
                     angles = r.as_euler("xyz",degrees=True)
                     #quat = r.as_quat()
-                    print("rot {}".format(angles))
+                    #print("rot {}".format(angles))
                     #print("{}: {},{},{}".format(using, forward, right, height))
 
                     master.mav.landing_target_send(
@@ -167,7 +171,7 @@ def land():
 
                     master.mav.command_long_send(master.target_system, master.target_component,
                                                  mavutil.mavlink.MAV_CMD_CONDITION_YAW, 0,
-                                                 int(yaw), 1.8  , direction, 1, 0, 0, 0, 0)
+                                                 int(yaw), angle_rate_used  , direction, 1, 0, 0, 0, 0)
 
 
 print("starting video")
@@ -176,29 +180,40 @@ landing_target = []
 capture = VideoCapture(stack)
 fileWriter = FileWriter(stack,landing_target)
 
-'''
+
 #move_to_frd_ned(0,0,-50)
+#Set all basic parameters for PRECISION LANDING TO work MAV_CMD_DO_SET_PARAMETER
+master.mav.param_set_send(master.target_system, master.target_component,
+                                                 b'LAND_SPEED', 300.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+
+master.mav.param_set_send(master.target_system, master.target_component,
+                                                 b'LAND_ALT_LOW', 1000.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+
+
+master.mav.param_set_send(master.target_system, master.target_component,
+                                                 b'LAND_SPEED_HIGH', 1000.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+
+print("guided mode")
 #mode guide
 master.mav.command_long_send(master.target_system, master.target_component,
                                                  mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
                                                  1, 4, 0, 0, 0, 0, 0, 0)
-msg = master.wait_heartbeat()
-print("hb {}".format(msg))
+print("arm")
 #ARM
 master.mav.command_long_send(master.target_system, master.target_component,
                                                  mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0,
                                                  1, 0, 0, 0, 0, 0, 0, 0)
-'''
+
 #takeoff 20
-print("sned takeoff")
+print("send takeoff")
 master.mav.command_long_send(master.target_system, master.target_component,
                                                  mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0,
-                                                 0, 0, 0, 0, 0, 0, 20)
+                                                 0, 0, 0, 0, 0, 0, 2)
 cmd_accepted = False
 while cmd_accepted:
     msg = master.recv_match(type='COMMAND_ACK',blocking=True) #
     print(msg)
-
+'''
 arrived = False
 while not arrived:
     msg = master.recv_match(type='LOCAL_POSITION_NED',blocking=True) #
@@ -206,11 +221,18 @@ while not arrived:
     if between_two_numbers(msg.z,-20.30,-19.70) :
         print("arrived")
         arrived = True
+'''
+print("Wait 10 sec")
+time.sleep(10)
 
+print("travel to NED dest.")
 move_to_frd_ned(1,2,-20)
 
+print("rotate 40° CCW")
 rotate_cc_to(40,-1)
 
+#set land mode
+print("Start landing")
 master.mav.command_long_send(master.target_system, master.target_component,
                                                  mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
                                                  1, 9, 0, 0, 0, 0, 0, 0)
