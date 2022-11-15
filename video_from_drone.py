@@ -10,9 +10,10 @@ from findHomographyORB_GPU import find_homography
 from arucode_decoder import Arucode_Decoder
 
 class LandingTargetDetector():
-    def __init__(self,stack,targetStack):
+    def __init__(self,stack,targetStack,analyzed_img_stack):
         self.stack = stack
         self.targetStack = targetStack
+        self.analyzed_img_stack = analyzed_img_stack
 
         #self.decoder = Arucode_Decoder()
         self.at_detector = Detector(
@@ -51,7 +52,7 @@ class LandingTargetDetector():
         topLeft = (int(topLeft[0]), int(topLeft[1]))
 
         # draw the bounding box of the ArUCo detection
-        cv2.line(decoded_frame, topLeft, topRight, (0, 255, 0), 2)
+        cv2.line(decoded_frame, topLeft, topRight, (255, 0, 0), 2)
         cv2.line(decoded_frame, topRight, bottomRight, (0, 255, 0), 2)
         cv2.line(decoded_frame, bottomRight, bottomLeft, (0, 255, 0), 2)
         cv2.line(decoded_frame, bottomLeft, topLeft, (0, 255, 0), 2)
@@ -100,11 +101,14 @@ class LandingTargetDetector():
                     if (decoded_frame is None):
                         print("image is none")
                     else:
+                        self.analyzed_img_stack.append(decoded_frame)
+                        '''
                         img = imutils.resize(decoded_frame, width=600)
                         cv2.imshow("Drone camera",img)
                         if cv2.waitKey(1) == ord("q"):
                             cv2.destroyAllWindows()
                             exit(0)
+                        '''
 
 
 class VideoCapture:
@@ -134,5 +138,6 @@ class VideoCapture:
 
 if __name__ == '__main__':
     image_stack = []
+    data_stack = []
     capture = VideoCapture(image_stack)
-    fileWriter = FileWriter(image_stack)
+    detector = LandingTargetDetector(image_stack,data_stack)
