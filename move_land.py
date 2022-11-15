@@ -2,7 +2,7 @@ import time
 import math
 import numpy as np
 import os
-from video_from_drone import VideoCapture, FileWriter
+from video_from_drone import VideoCapture, LandingTargetDetector
 from scipy.spatial.transform import Rotation
 
 #import os
@@ -10,6 +10,23 @@ from scipy.spatial.transform import Rotation
 #os.environ['MAVLINK20']='1'
 
 from pymavlink import mavutil
+import threading
+
+class MavLinkMessageLogger():
+    def __init__(self, master):
+        self.master = master
+        thread = threading.Thread(target=self.start, )
+        self.continue_flag = True
+        thread.start()
+
+    def __del__(self):
+        print("calling destructor")
+
+    def start(self):
+        while True:
+            msg = self.master.recv_match(type='STATUSTEXT',blocking=False)
+            if msg is not None:
+                print(msg)
 
 print(">>CONNECTING TO DRONE<<")
 
@@ -24,32 +41,7 @@ master.mav.ping_send(
 print(">>WAITING FOR HEARTBEAT<<")
 master.wait_heartbeat()
 print("Heartbeat from system (system %u component %u)" % (master.target_system, master.target_component))
-
-def rotate(angle_x, angle_y):
-    """
-    Actual calcuation:
-        sin_yaw = math.sin(rotation/180*math.pi)
-        #cos_yaw = math.cos(rotation/180*math.pi)
-        cos_yaw = 0 # Python math doesn't actually make it zero though
-        rot = np.array([[cos_yaw, -sin_yaw, 0],[sin_yaw,cos_yaw,0],[0,0,1]])
-        vec = np.array([1,2,3]) # y, x, z
-        rot.dot(vec) # returns: array([ 2., -1.,  3.]) # y, x, z = x, -y, z
-        i.e. we get: x, y = -y, x
-    Reference frame of ArduCopter -- x forward, y right
-    https://discuss.ardupilot.org/t/copter-x-y-z-which-is-which/6823/3
-    https://docs.px4.io/en/config/flight_controller_orientation.html
-    Basically, try it till it works. My RPi is mounted so the top of the image
-    is actually the left side of my drone and the right of the image is the front.
-    Actually, I think that +y in the image is the bottom of the image. Thus,
-    by mounting the RPi in that way, I think it's actually outputting (x,y)
-    coordinates in the same frame as the drone.
-    See: https://github.com/tensorflow/tensorflow/issues/9142
-    Or.... from this Youtube comment
-    https://www.youtube.com/watch?v=5AVb2hA2EUs&lc=UggMS88TyPsEt3gCoAEC.8I2Q1bOkhXh8I3ZMGRRKTY
-    saying "negative X = target to the left, negative Y = target is forward", then
-    we want: angle_y, -angle_x
-    """
-    return angle_y, -angle_x # from Youtube comment and TF origin in top left
+MavLinkMessageLogger(master)
 
 def between_two_numbers(num,a,b):
     if b < a:
@@ -105,9 +97,9 @@ def land():
 
     arrived = False
     while not arrived:
-        if len(landing_target)>0:
+        if len(landing_target_data_stack)>0:
             #print(len(landing_target))
-            data = landing_target.pop()
+            data = landing_target_data_stack.pop()
 
             t_vec_big = data[0]
             t_vec_small = data[1]
@@ -175,23 +167,23 @@ def land():
 
 
 print("starting video")
-stack = []
-landing_target = []
-capture = VideoCapture(stack)
-fileWriter = FileWriter(stack,landing_target)
+images_stack = []
+landing_target_data_stack = []
+capture = VideoCapture(images_stack)
+LandingTargetDetector = LandingTargetDetector(images_stack,landing_target_data_stack)
 
 
 #move_to_frd_ned(0,0,-50)
 #Set all basic parameters for PRECISION LANDING TO work MAV_CMD_DO_SET_PARAMETER
 master.mav.param_set_send(master.target_system, master.target_component,
-                                                 b'LAND_SPEED', 300.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+                                                 b'LAND_SPEED', 30.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
 master.mav.param_set_send(master.target_system, master.target_component,
                                                  b'LAND_ALT_LOW', 1000.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
 
 master.mav.param_set_send(master.target_system, master.target_component,
-                                                 b'LAND_SPEED_HIGH', 1000.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+                                                 b'LAND_SPEED_HIGH', 300.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
 print("guided mode")
 #mode guide
@@ -228,8 +220,10 @@ time.sleep(10)
 print("travel to NED dest.")
 move_to_frd_ned(1,2,-20)
 
-print("rotate 40° CCW")
-rotate_cc_to(40,-1)
+print("rotate random degrees CCW")
+import random
+rot_rand = random.randint(0, 60)
+rotate_cc_to(rot_rand,1)
 
 #set land mode
 print("Start landing")

@@ -9,7 +9,7 @@ import airsim
 from findHomographyORB_GPU import find_homography
 from arucode_decoder import Arucode_Decoder
 
-class FileWriter():
+class LandingTargetDetector():
     def __init__(self,stack,targetStack):
         self.stack = stack
         self.targetStack = targetStack
