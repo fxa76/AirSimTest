@@ -80,7 +80,7 @@ class LandingTargetDetector():
                     # decode arucode
                     #decoded_frame, rvec, tvec = self.decoder.decode(decoded_frame)
                     #decode april tags
-                    tag_big = self.at_detector.detect(decoded_frame_gray, camera_params=[90, 90, 512, 768/2], estimate_tag_pose=True, tag_size=.5)
+                    tag_big = self.at_detector.detect(decoded_frame_gray, camera_params=[90, 90, 512, 768/2], estimate_tag_pose=True, tag_size=0.5)
                     tag_small = self.at_detector2.detect(decoded_frame_gray, camera_params=[90, 90, 512, 768/2], estimate_tag_pose=True, tag_size=.1)
 
                     t_vec_big = None

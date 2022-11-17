@@ -15,7 +15,7 @@ if __name__ == '__main__':
     capture = VideoCapture(continue_flag, images_stack)
     landingTargetDetector = LandingTargetDetector(continue_flag, images_stack, landing_target_data_stack,
                                                   analyzed_img_stack)
-    navigator = Navigator(landing_target_data_stack,textLogger)
+    navigator = Navigator(continue_flag,landing_target_data_stack,textLogger)
 
     app = QApplication([])
     start_window = StartWindow(analyzed_img_stack,message_stack,navigator)

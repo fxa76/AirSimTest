@@ -23,7 +23,7 @@ class StartWindow(QMainWindow):
         self.button_land = QPushButton('land', self.central_widget)
 
         self.image_view = Label()
-        self.status_text = QTextEdit("Status Text")
+        self.status_text = QTextEdit("")
 
         self.left = 100
         self.top = 100

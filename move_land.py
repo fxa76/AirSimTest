@@ -12,39 +12,6 @@ from pymavlink import mavutil
 import threading
 
 
-class MavLinkMessageLogger():
-    def __init__(self, master):
-        self.master = master
-        thread = threading.Thread(target=self.start, )
-        self.continue_flag = True
-        thread.start()
-
-    def __del__(self):
-        print("calling destructor")
-
-    def start(self):
-        while True:
-            msg = self.master.recv_match(type='STATUSTEXT', blocking=False)
-            if msg is not None:
-                print(msg)
-
-class FlightStatusCheck():
-    def __init__(self, continue_flag, master):
-        self.master = master
-        self.continue_flag = continue_flag
-        thread = threading.Thread(target=self.start, )
-        thread.start()
-
-    def __del__(self):
-        print("calling destructor")
-
-    def start(self):
-        while self.continue_flag:
-            msg = self.master.recv_match(blocking=False)
-            if msg is not None:
-                #print(msg.to_dict())
-                pass
-
 class Navigator:
     def __init__(self,continue_flag,landing_target_data_stack,textLogger):
         self.continue_flag = continue_flag
@@ -86,7 +53,7 @@ class Navigator:
         arrived = False
         while not arrived:
             msg = self.master.recv_match(type='LOCAL_POSITION_NED', blocking=True)  #
-            print(msg)
+            self.textLogger.log(msg)
             if self.between_two_numbers(msg.x, f - .1, f + 0.1) and self.between_two_numbers(msg.y, r - .1,
                                                                                    r + 0.1) and self.between_two_numbers(msg.z,
                                                                                                                     d - .1,
@@ -127,7 +94,7 @@ class Navigator:
 
 
     def land(self):
-        self.textLogger.log(">>>>>>>>>>LANDING<<<<<<<<<<<<<")
+        self.textLogger.log(">>>>>>>>>>START LANDING SEQUENCE<<<<<<<<<<<<<")
         self.cpt = 0
         arrived = False
         while not arrived:
@@ -209,7 +176,10 @@ class Navigator:
         # move_to_frd_ned(0,0,-50)
         # Set all basic parameters for PRECISION LANDING TO work MAV_CMD_DO_SET_PARAMETER
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
-                                  b'LAND_SPEED', 300.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+                                       b'RNGFND1_TYPE', 10.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+
+        self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
+                                  b'LAND_SPEED', 100.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
                                   b'LAND_ALT_LOW', 100.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
@@ -247,8 +217,8 @@ class Navigator:
                 print("arrived")
                 arrived = True
         '''
-        self.textLogger.log("Wait 1 sec")
-        time.sleep(1)
+        self.textLogger.log("Wait 10 sec")
+        time.sleep(10)
 
         self.textLogger.log("travel to NED dest.")
         self.move_to_frd_ned(1, 2, -20)
@@ -257,7 +227,7 @@ class Navigator:
         import random
         rot_rand = random.randint(0, 180)
         self.textLogger.log("ramdom value : {}".format(rot_rand))
-        self.rotate_cc_to(rot_rand, 1)
+        # self.rotate_cc_to(rot_rand, 1)
 
 
         # set land mode
