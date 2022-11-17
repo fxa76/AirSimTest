@@ -5,9 +5,6 @@ import os
 from video_from_drone import VideoCapture, LandingTargetDetector
 from scipy.spatial.transform import Rotation
 
-from PyQt5.QtWidgets import QApplication
-from views import StartWindow
-
 # import os
 # os.environ['MAVLINK20']='1'
 
@@ -31,13 +28,30 @@ class MavLinkMessageLogger():
             if msg is not None:
                 print(msg)
 
+class FlightStatusCheck():
+    def __init__(self, continue_flag, master):
+        self.master = master
+        self.continue_flag = continue_flag
+        thread = threading.Thread(target=self.start, )
+        thread.start()
+
+    def __del__(self):
+        print("calling destructor")
+
+    def start(self):
+        while self.continue_flag:
+            msg = self.master.recv_match(blocking=False)
+            if msg is not None:
+                #print(msg.to_dict())
+                pass
 
 class Navigator:
-    def __init__(self,landing_target_data_stack):
-
+    def __init__(self,continue_flag,landing_target_data_stack,textLogger):
+        self.continue_flag = continue_flag
         self.landing_target_data_stack = landing_target_data_stack
+        self.textLogger= textLogger
 
-        print(">>CONNECTING TO DRONE<<")
+        self.textLogger.log(">>CONNECTING TO DRONE<<")
         self.master = mavutil.mavlink_connection(
             "udp:192.168.1.30:14560")  # in Arducopter cmd type: output add 192.168.1.18:14560
 
@@ -47,10 +61,11 @@ class Navigator:
             0,  # Request ping of all systems
             0  # Request ping of all components
         )
-        print(">>WAITING FOR HEARTBEAT<<")
+        self.textLogger.log(">>WAITING FOR HEARTBEAT<<")
         self.master.wait_heartbeat()
-        print("Heartbeat from system (system %u component %u)" % (self.master.target_system, self.master.target_component))
-        MavLinkMessageLogger(self.master)
+        self.textLogger.log("Heartbeat from system (system %u component %u)" % (self.master.target_system, self.master.target_component))
+        #MavLinkMessageLogger(self.master)
+        #fsc = FlightStatusCheck(self.continue_flag, self.master)
 
     def between_two_numbers(self, num, a, b):
         if b < a:
@@ -62,7 +77,7 @@ class Navigator:
 
 
     def move_to_frd_ned(self, f, r, d):
-        print("move NED")
+        self.textLogger.log("move NED")
         self.master.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, self.master.target_system,
                                                                                       self.master.target_component,
                                                                                       mavutil.mavlink.MAV_FRAME_LOCAL_NED,
@@ -76,21 +91,21 @@ class Navigator:
                                                                                    r + 0.1) and self.between_two_numbers(msg.z,
                                                                                                                     d - .1,
                                                                                                                     d + 0.1):
-                print("arrived")
+                self.textLogger.log("arrived")
                 arrived = True
 
 
     def rotate_cc_to(self, rotation_z, direction):
-        print("rotating")
+        self.textLogger.log("rotating")
         msg = self.master.recv_match(type='ATTITUDE', blocking=True)
         start_yaw = math.degrees(msg.yaw)
-        print("start yaw {}".format(start_yaw))
-        target_yaw = start_yaw + direction * rotation_z
+        self.textLogger.log("start yaw {}".format(start_yaw))
+
+        target_yaw = start_yaw + rotation_z
         if target_yaw > 180:
             target_yaw = target_yaw - 360
-        if target_yaw < -180:
-            target_yaw = target_yaw + 360
-        print("target yaw {}".format(target_yaw))
+
+        self.textLogger.log("target yaw {}".format(target_yaw))
 
         self.master.mav.command_long_send(self.master.target_system, self.master.target_component,
                                      mavutil.mavlink.MAV_CMD_CONDITION_YAW, 0,
@@ -98,18 +113,21 @@ class Navigator:
 
         arrived = False
         while not arrived:
-            msg = self.master.recv_match(type='ATTITUDE', blocking=True)  #
-            current_yaw = math.degrees(msg.yaw)
-            if current_yaw > 180:
-                current_yaw = current_yaw - 360
-            print(current_yaw)
-            if self.between_two_numbers(current_yaw, target_yaw - 5, target_yaw + 5):
-                print("arrived")
-                arrived = True
+            msg = self.master.recv_match(type='ATTITUDE', blocking=False)
+            if msg is not None:
+                current_yaw = math.degrees(msg.yaw)
+                if current_yaw > 180:
+                    current_yaw = current_yaw - 360
+                if current_yaw < -180:
+                    current_yaw = current_yaw + 360
+                self.textLogger.log("target {} current {}".format(target_yaw,current_yaw))
+                if self.between_two_numbers(current_yaw, target_yaw - 5, target_yaw + 5):
+                    self.textLogger.log("arrived")
+                    arrived = True
 
 
     def land(self):
-        print(">>>>>>>>>>LANDING<<<<<<<<<<<<<")
+        self.textLogger.log(">>>>>>>>>>LANDING<<<<<<<<<<<<<")
         self.cpt = 0
         arrived = False
         while not arrived:
@@ -170,7 +188,8 @@ class Navigator:
                             [1, 0, 0, 0],  # q** no rotation [1,0,0,0] quat not having effect
                             mavutil.mavlink.LANDING_TARGET_TYPE_VISION_FIDUCIAL,
                             1)
-                        self.cpt+=1
+
+
                         if self.cpt == 10:
                             yaw = angles[2]
                             direction = 1
@@ -183,39 +202,42 @@ class Navigator:
                                                          mavutil.mavlink.MAV_CMD_CONDITION_YAW, 0,
                                                          int(yaw), angle_rate_used, direction, 1, 0, 0, 0, 0)
                             self.cpt=0
+                        self.cpt += 1
+
 
     def basic_nav(self):
         # move_to_frd_ned(0,0,-50)
         # Set all basic parameters for PRECISION LANDING TO work MAV_CMD_DO_SET_PARAMETER
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
-                                  b'LAND_SPEED', 30.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+                                  b'LAND_SPEED', 300.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
-                                  b'LAND_ALT_LOW', 1000.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+                                  b'LAND_ALT_LOW', 100.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
                                   b'LAND_SPEED_HIGH', 300.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
-        print("guided mode")
+        self.textLogger.log("guided mode")
         # mode guide
         self.master.mav.command_long_send(self.master.target_system, self.master.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
                                      1, 4, 0, 0, 0, 0, 0, 0)
-        print("arm")
+
+        self.textLogger.log("arm")
         # ARM
         self.master.mav.command_long_send(self.master.target_system, self.master.target_component,
                                      mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0,
                                      1, 0, 0, 0, 0, 0, 0, 0)
 
         # takeoff 20
-        print("send takeoff")
+        self.textLogger.log("send takeoff")
         self.master.mav.command_long_send(self.master.target_system, self.master.target_component,
                                      mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0,
                                      0, 0, 0, 0, 0, 0, 2)
         cmd_accepted = False
         while cmd_accepted:
             msg = self.master.recv_match(type='COMMAND_ACK', blocking=True)  #
-            print(msg)
+            self.textLogger.log(msg)
         '''
         arrived = False
         while not arrived:
@@ -225,20 +247,21 @@ class Navigator:
                 print("arrived")
                 arrived = True
         '''
-        print("Wait 10 sec")
-        time.sleep(10)
+        self.textLogger.log("Wait 1 sec")
+        time.sleep(1)
 
-        print("travel to NED dest.")
+        self.textLogger.log("travel to NED dest.")
         self.move_to_frd_ned(1, 2, -20)
 
-        print("rotate random degrees CCW")
+        self.textLogger.log("rotate random degrees CCW")
         import random
-
-        rot_rand = random.randint(0, 60)
+        rot_rand = random.randint(0, 180)
+        self.textLogger.log("ramdom value : {}".format(rot_rand))
         self.rotate_cc_to(rot_rand, 1)
 
+
         # set land mode
-        print("Start landing")
+        self.textLogger.log("Start landing")
         self.master.mav.command_long_send(self.master.target_system, self.master.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
                                      1, 9, 0, 0, 0, 0, 0, 0)
@@ -246,19 +269,29 @@ class Navigator:
         self.land()
 
 
-print("starting video")
-images_stack = []
-landing_target_data_stack = []
-analyzed_img_stack = []
-capture = VideoCapture(images_stack)
-LandingTargetDetector = LandingTargetDetector(images_stack, landing_target_data_stack, analyzed_img_stack)
-navigator = Navigator(landing_target_data_stack)
+class TextLogger:
+    def __init__(self, message_stack):
+        self.message_stack = message_stack
 
-app = QApplication([])
-start_window = StartWindow(analyzed_img_stack,navigator)
-start_window.show()
-app.exit(app.exec_())
+    def log(self, text):
+
+        self.message_stack.append(text)
+        print("{} : {}".format(len( self.message_stack), text))
 
 
 
+if __name__ == '__main__':
 
+    images_stack = []
+    landing_target_data_stack = []
+    analyzed_img_stack = []
+    message_stack = []
+
+    continue_flag = True
+
+    textLogger = TextLogger(message_stack)
+    capture = VideoCapture(continue_flag, images_stack)
+    landingTargetDetector = LandingTargetDetector(continue_flag,images_stack, landing_target_data_stack, analyzed_img_stack)
+    navigator = Navigator(continue_flag,landing_target_data_stack, textLogger)
+    navigator.basic_nav()
+    continue_flag = False

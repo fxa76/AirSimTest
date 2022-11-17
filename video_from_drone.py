@@ -10,7 +10,8 @@ from findHomographyORB_GPU import find_homography
 from arucode_decoder import Arucode_Decoder
 
 class LandingTargetDetector():
-    def __init__(self,stack,targetStack,analyzed_img_stack):
+    def __init__(self,continue_flag, stack,targetStack,analyzed_img_stack):
+        self.continue_flag = continue_flag
         self.stack = stack
         self.targetStack = targetStack
         self.analyzed_img_stack = analyzed_img_stack
@@ -66,7 +67,7 @@ class LandingTargetDetector():
 
     def start(self):
         seq = 0
-        while True:
+        while self.continue_flag:
 
             if len(self.stack) > 0 :
                 # print("stck length{}".format(len(self.stack)))
@@ -113,14 +114,14 @@ class LandingTargetDetector():
 
 class VideoCapture:
 
-    def __init__(self,stack ):
+    def __init__(self,continue_flag,stack ):
+        self.continue_flag = continue_flag
         self.stack = stack
         simclient = airsim.MultirotorClient()
         simclient.confirmConnection()
         self.client = simclient
         # print(self.client.simGetCameraInfo(str('down')))
         thread = threading.Thread(target=self.start, )
-        self.continue_flag = True
         thread.start()
 
     def __del__(self):

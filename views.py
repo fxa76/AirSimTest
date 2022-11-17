@@ -1,7 +1,7 @@
 from PyQt5.QtGui import QImage, QPixmap, QPainter
 from PyQt5.QtCore import Qt, QThread, QTimer
 from PyQt5.QtWidgets import QMainWindow, QFormLayout, QWidget, QPushButton, QBoxLayout, QVBoxLayout, QApplication, \
-    QSlider, QLabel, QGridLayout, QGroupBox, QCheckBox, QSizePolicy
+    QSlider, QLabel, QGridLayout, QGroupBox, QCheckBox, QSizePolicy, QTextEdit
 
 import cv2
 import os
@@ -10,17 +10,20 @@ import threading
 
 
 class StartWindow(QMainWindow):
-    def __init__(self, analyzed_img_stack, navigator):
+    def __init__(self,analyzed_img_stack,message_stack,navigator):
         super().__init__()
+
         self.analyzed_img_stack = analyzed_img_stack
+        self.message_stack = message_stack
         self.navigator = navigator
+
         self.central_widget = QWidget()
 
         self.button_takeoff = QPushButton('takeoff', self.central_widget)
         self.button_land = QPushButton('land', self.central_widget)
 
         self.image_view = Label()
-        self.image_view_video_without_background = Label()
+        self.status_text = QTextEdit("Status Text")
 
         self.left = 100
         self.top = 100
@@ -29,11 +32,13 @@ class StartWindow(QMainWindow):
         self.setGeometry(self.left, self.top, self.width, self.height)
 
         self.horizontalGroupBox = QGroupBox("Live Capture")
-        self.horizontalGroupBox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        layout2 = QGridLayout()
+        #self.horizontalGroupBox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        layout2.addWidget(self.image_view, 0, 1)
-        layout2.addWidget(self.image_view_video_without_background, 0, 2)
+        layout2 = QGridLayout()
+        layout2.addWidget(self.image_view, 0, 0)
+        layout2.addWidget(self.status_text,0, 1)
+        layout2.setColumnStretch(0, 1)
+        layout2.setColumnStretch(1, 1)
 
         self.horizontalGroupBox.setLayout(layout2)
 
@@ -48,16 +53,18 @@ class StartWindow(QMainWindow):
         self.button_takeoff.clicked.connect(self.takeoff_call_back)
         self.button_land.clicked.connect(self.land_call_back)
 
+
         self.video_thread = VideoUpdateThread(self.analyzed_img_stack, self)
         self.video_thread.start(1)
+
+        self.msg_thread = MessageUpdateThread(self.message_stack, self)
+        self.msg_thread.start(1)
 
     def takeoff_call_back(self):
         print("takeoff_call_back")
         print("go on ")
         self.nav_thread = NavigatorThread(self.navigator)
         self.nav_thread.start(0)
-
-
 
     def land_call_back(self):
         print("land_call_back")
@@ -98,6 +105,9 @@ class NavigatorThread(QThread):
         super().__init__()
         self.navigator = navigator
 
+    def __del__(self):
+        print("Thread ended")
+
     def run(self):
         self.navigator.basic_nav()
 
@@ -108,6 +118,7 @@ class VideoUpdateThread(QThread):
         self.analyzed_img_stack = analyzed_img_stack
         self.window = window
 
+
     def run(self):
         while True:
             # print("updating video")
@@ -115,6 +126,18 @@ class VideoUpdateThread(QThread):
                 qimage = self.window.convert_to_qpixmap_color(self.analyzed_img_stack.pop())
                 self.window.image_view.setPixmap(QPixmap.fromImage(qimage))
 
+class MessageUpdateThread(QThread):
+    def __init__(self, message_stack,window):
+        super().__init__()
+        self.message_stack = message_stack
+        self.window = window
+
+    def run(self):
+        while True:
+            # print("status text update")
+            if len(self.message_stack) > 0:
+                msg = self.message_stack.pop()
+                self.window.status_text.append(msg)
 
 if __name__ == '__main__':
     app = QApplication([])
