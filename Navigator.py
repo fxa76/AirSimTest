@@ -62,7 +62,7 @@ class Navigator(threading.Thread):
         arrived = False
         while not arrived:
             msg = self.master.recv_match(type='LOCAL_POSITION_NED', blocking=True)  #
-            self.textLogger.log(msg)
+            self.textLogger.log("{}".format(msg))
             if self.between_two_numbers(msg.x, f - .1, f + 0.1) and self.between_two_numbers(msg.y, r - .1,
                                                                                              r + 0.1) and self.between_two_numbers(
                 msg.z,
@@ -106,13 +106,14 @@ class Navigator(threading.Thread):
         self.cpt = 0
         arrived = False
         while not arrived:
-            if self.landing_target_data_stack.qsize() > 0:
+            if self.landing_target_data_stack is not None:
+                # print("Landing target is {}".format(self.landing_target_data_stack))
                 try:
-                    data = self.landing_target_data_stack.get()
-                    t_vec_big = data[0]
-                    t_vec_small = data[1]
-                    r_vec_big = data[2]
-                    r_vec_small = data[2]
+                    data = self.landing_target_data_stack
+                    t_vec_big = data.t_vec_big
+                    t_vec_small = data.t_vec_small
+                    r_vec_big = data.r_vec_big
+                    r_vec_small = data.r_vec_small
 
                     t_vec_used = None
                     r_vec_used = None
@@ -143,7 +144,7 @@ class Navigator(threading.Thread):
                             r_vec_used = np.asarray(r_vec_used)
                             r = Rotation.from_matrix(r_vec_used)
                             angles = r.as_euler("xyz", degrees=True)
-                            # quat = r.as_quat()
+                            #quat = r.as_quat()
                             # print("rot {}".format(angles))
                             # print("{}: {},{},{}".format(using, forward, right, height))
 
@@ -159,7 +160,7 @@ class Navigator(threading.Thread):
                                 forward,  # x** forward
                                 right,  # y** right
                                 height,  # z** height
-                                [1, 0, 0, 0],  # q** no rotation [1,0,0,0] quat not having effect
+                                [1,0,0,0],  # q** no rotation [1,0,0,0] quat not having effect
                                 mavutil.mavlink.LANDING_TARGET_TYPE_VISION_FIDUCIAL,
                                 1)
 
@@ -176,6 +177,7 @@ class Navigator(threading.Thread):
                                                                   int(yaw), angle_rate_used, direction, 1, 0, 0, 0, 0)
                                 self.cpt = 0
                             self.cpt += 1
+
                     else:
                         print("t_vec used is NOne")
                 except queue.Empty:
@@ -188,13 +190,13 @@ class Navigator(threading.Thread):
                                        b'RNGFND1_TYPE', 10.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
-                                       b'LAND_SPEED', 50.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+                                       b'LAND_SPEED', 100.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
                                        b'LAND_ALT_LOW', 400.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
-                                       b'LAND_SPEED_HIGH', 500.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+                                       b'LAND_SPEED_HIGH', 1000.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.textLogger.log("guided mode")
 
@@ -215,16 +217,17 @@ class Navigator(threading.Thread):
                                           mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0,
                                           0, 0, 0, 0, 0, 0, 2)
 
-        self.textLogger.log("Wait 20 sec")
-        time.sleep(20)
+        sleep_time = 20
+        self.textLogger.log("Wait {} sec".format(sleep_time))
+        time.sleep(sleep_time)
 
         self.textLogger.log("travel to NED dest.")
         self.move_to_frd_ned(1, 2, -20)
 
         self.textLogger.log("rotate random degrees CCW")
         import random
-        rot_rand = random.randint(0, 180)
-        self.textLogger.log("ramdom value : {}".format(rot_rand))
+        # rot_rand = random.randint(0, 180)
+        # self.textLogger.log("ramdom value : {}".format(rot_rand))
         # self.rotate_cc_to(rot_rand, 1)
 
         # set land mode
@@ -233,4 +236,4 @@ class Navigator(threading.Thread):
                                           mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
                                           1, 9, 0, 0, 0, 0, 0, 0)
 
-        self.command = 2
+        self.land()

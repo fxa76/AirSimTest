@@ -6,20 +6,21 @@ from landingTargetDetector import LandingTargetDetector
 from cancellationToken import CancellationToken
 
 if __name__ == '__main__':
+    from landing_target import LandingTarget
 
-    images_stack = []
-    landing_target_data_stack = []
+    source_images_stack = []
+    landing_target_data = LandingTarget()
     analyzed_img_stack = []
     message_stack = []
     continue_flag = CancellationToken()
 
     textLogger = TextLogger(message_stack)
-    capture = VideoCapture(continue_flag, images_stack)
-    landingTargetDetector = LandingTargetDetector(continue_flag, images_stack, landing_target_data_stack, analyzed_img_stack)
-    navigator = Navigator(continue_flag,landing_target_data_stack,textLogger)
+    capture = VideoCapture(continue_flag, source_images_stack)
+    landingTargetDetector = LandingTargetDetector(continue_flag, source_images_stack, landing_target_data, analyzed_img_stack)
+    navigator = Navigator(continue_flag,landing_target_data,textLogger)
 
     app = QApplication([])
     start_window = StartWindow(analyzed_img_stack,message_stack,navigator)
     start_window.show()
     app.exit(app.exec_())
-    CancellationToken.cancel()
+    continue_flag.cancel()

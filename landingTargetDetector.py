@@ -98,7 +98,11 @@ class LandingTargetDetector():
                         decoded_frame = self.draw_contour(tag_small[0],decoded_frame)
 
                     if (t_vec_big is not None and tag_big[0].tag_id ==43) or (t_vec_small is not None and tag_small[0].tag_id ==20):
-                        self.target_data_stack.append([t_vec_big,t_vec_small,r_vec_big,r_vec_small])
+                        self.target_data_stack.t_vec_big = t_vec_big
+                        self.target_data_stack.t_vec_small = t_vec_small
+                        self.target_data_stack.r_vec_big = r_vec_big
+                        self.target_data_stack.r_vec_small = r_vec_small
+                        #print("target set to {}".format(self.target_data_stack))
 
                     if (decoded_frame is None):
                         print("image is none")
