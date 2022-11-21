@@ -54,7 +54,7 @@ class Navigator:
         arrived = False
         while not arrived:
             msg = self.master.recv_match(type='LOCAL_POSITION_NED', blocking=True)  #
-            self.textLogger.log(msg)
+            self.textLogger.log("{}".format(msg))
             if self.between_two_numbers(msg.x, f - .1, f + 0.1) and self.between_two_numbers(msg.y, r - .1,
                                                                                    r + 0.1) and self.between_two_numbers(msg.z,
                                                                                                                     d - .1,
@@ -124,11 +124,7 @@ class Navigator:
                     angle_rate_used = 1.0
                     using = "Small"
                 if t_vec_used is not None:
-                    '''save working on aruco
-                    height = tvec[0][0][2]
-                    forward = 0.25-tvec[0][0][1]
-                    right = tvec[0][0][0]+0.25
-                    '''
+
                     height = t_vec_used[2][0]
                     forward = -t_vec_used[1][0]
                     right = t_vec_used[0][0]
@@ -208,7 +204,7 @@ class Navigator:
         cmd_accepted = False
         while cmd_accepted:
             msg = self.master.recv_match(type='COMMAND_ACK', blocking=True)  #
-            self.textLogger.log(msg)
+            self.textLogger.log("{}".format(msg))
         '''
         arrived = False
         while not arrived:
