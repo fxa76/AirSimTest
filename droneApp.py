@@ -1,8 +1,9 @@
 from PyQt5.QtWidgets import QApplication
 from views import StartWindow
 from move_land import Navigator, TextLogger
-from video_from_drone import VideoCapture, LandingTargetDetector
-
+from video_from_drone import VideoCapture
+from landingTargetDetector import LandingTargetDetector
+from cancellationToken import CancellationToken
 
 if __name__ == '__main__':
 
@@ -10,14 +11,15 @@ if __name__ == '__main__':
     landing_target_data_stack = []
     analyzed_img_stack = []
     message_stack = []
-    continue_flag = True
+    continue_flag = CancellationToken()
+
     textLogger = TextLogger(message_stack)
     capture = VideoCapture(continue_flag, images_stack)
-    landingTargetDetector = LandingTargetDetector(continue_flag, images_stack, landing_target_data_stack,
-                                                  analyzed_img_stack)
+    landingTargetDetector = LandingTargetDetector(continue_flag, images_stack, landing_target_data_stack, analyzed_img_stack)
     navigator = Navigator(continue_flag,landing_target_data_stack,textLogger)
 
     app = QApplication([])
     start_window = StartWindow(analyzed_img_stack,message_stack,navigator)
     start_window.show()
     app.exit(app.exec_())
+    CancellationToken.cancel()

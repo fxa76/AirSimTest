@@ -2,7 +2,8 @@ import time
 import math
 import numpy as np
 import os
-from video_from_drone import VideoCapture, LandingTargetDetector
+from video_from_drone import VideoCapture
+from landingTargetDetector import LandingTargetDetector
 from scipy.spatial.transform import Rotation
 
 # import os
@@ -251,17 +252,18 @@ class TextLogger:
 
 
 if __name__ == '__main__':
+    from cancellationToken import CancellationToken
 
     images_stack = []
     landing_target_data_stack = []
     analyzed_img_stack = []
     message_stack = []
 
-    continue_flag = True
+    continue_flag = CancellationToken()
 
     textLogger = TextLogger(message_stack)
     capture = VideoCapture(continue_flag, images_stack)
     landingTargetDetector = LandingTargetDetector(continue_flag,images_stack, landing_target_data_stack, analyzed_img_stack)
     navigator = Navigator(continue_flag,landing_target_data_stack, textLogger)
     navigator.basic_nav()
-    continue_flag = False
+    continue_flag.cancel()
