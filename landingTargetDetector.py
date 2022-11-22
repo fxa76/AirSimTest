@@ -103,6 +103,11 @@ class LandingTargetDetector():
                         self.target_data_stack.r_vec_big = r_vec_big
                         self.target_data_stack.r_vec_small = r_vec_small
                         #print("target set to {}".format(self.target_data_stack))
+                    else:
+                        self.target_data_stack.t_vec_big = None
+                        self.target_data_stack.t_vec_small = None
+                        self.target_data_stack.r_vec_big = None
+                        self.target_data_stack.r_vec_small = None
 
                     if (decoded_frame is None):
                         print("image is none")
