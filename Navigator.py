@@ -111,7 +111,8 @@ class Navigator(threading.Thread):
         self.textLogger.log("Start landing")
         self.master.mav.command_long_send(self.master.target_system, self.master.target_component,
                                           mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
-                                          1, 9, 0, 0, 0, 0, 0, 0)
+                                          1, 9,             #6 RTL, 9 LAND  https://ardupilot.org/dev/docs/apmcopter-adding-a-new-flight-mode.html
+                                          0, 0, 0, 0, 0, 0)
 
         self.landed = False
         while (not self.landed):
@@ -218,13 +219,10 @@ class Navigator(threading.Thread):
                                        b'RNGFND1_TYPE', 10.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
-                                       b'LAND_SPEED', 300.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+                                       b'LAND_SPEED', 200.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
-                                       b'LAND_ALT_LOW', 400.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
-
-        self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
-                                       b'LAND_SPEED_HIGH', 2000.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+                                       b'WPNAV_SPEED_DN', 500.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.textLogger.log("guided mode")
 
@@ -245,7 +243,7 @@ class Navigator(threading.Thread):
                                           mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0,
                                           0, 0, 0, 0, 0, 0, 2)
 
-        sleep_time = 20
+        sleep_time = 10
         self.textLogger.log("Wait {} sec".format(sleep_time))
         time.sleep(sleep_time)
 
