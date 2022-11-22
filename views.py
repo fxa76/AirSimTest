@@ -21,6 +21,7 @@ class StartWindow(QMainWindow):
 
         self.button_takeoff = QPushButton('takeoff', self.central_widget)
         self.button_land = QPushButton('land', self.central_widget)
+        self.button_land_done = QPushButton('landing done', self.central_widget)
 
         self.image_view = Label()
         self.status_text = QTextEdit("")
@@ -45,6 +46,7 @@ class StartWindow(QMainWindow):
         self.layout = QVBoxLayout(self.central_widget)
         self.layout.addWidget(self.button_takeoff)
         self.layout.addWidget(self.button_land)
+        self.layout.addWidget(self.button_land_done)
         self.layout.addWidget(self.horizontalGroupBox)
 
         self.setCentralWidget(self.central_widget)
@@ -52,6 +54,7 @@ class StartWindow(QMainWindow):
         # set button and sliders actions
         self.button_takeoff.clicked.connect(self.takeoff_call_back)
         self.button_land.clicked.connect(self.land_call_back)
+        self.button_land_done.clicked.connect(self.land_done_call_back)
 
 
         self.video_thread = VideoUpdateThread(self.analyzed_img_stack, self)
@@ -63,11 +66,16 @@ class StartWindow(QMainWindow):
     def takeoff_call_back(self):
         print("takeoff_call_back")
         print("go on ")
-        self.nav_thread = NavigatorThread(self.navigator)
-        self.nav_thread.start(0)
+        self.navigator.command=1
 
     def land_call_back(self):
         print("land_call_back")
+        self.navigator.command = 2
+
+    def land_done_call_back(self):
+        print("land_done_call_back")
+        self.navigator.landed = True
+        self.navigator.command = None
 
     def convert_to_qpixmap_color(self, cv_img):
         cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
@@ -98,18 +106,6 @@ class Label(QWidget):
             painter = QPainter(self)
             painter.setRenderHint(QPainter.SmoothPixmapTransform)
             painter.drawPixmap(self.rect(), self.p)
-
-
-class NavigatorThread(QThread):
-    def __init__(self, navigator):
-        super().__init__()
-        self.navigator = navigator
-
-    def __del__(self):
-        print("Thread ended")
-
-    def run(self):
-        self.navigator.basic_nav()
 
 
 class VideoUpdateThread(QThread):

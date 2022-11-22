@@ -12,6 +12,7 @@ import numpy as np
 class Navigator(threading.Thread):
     def __init__(self, continue_flag, landing_target_data_stack, textLogger):
         super(Navigator, self).__init__()
+        self.last_called = time.time()
         self.continue_flag = continue_flag
         self.landing_target_data_stack = landing_target_data_stack
         self.textLogger = textLogger
@@ -30,15 +31,18 @@ class Navigator(threading.Thread):
         self.master.wait_heartbeat()
         self.textLogger.log("Heartbeat from system (system %u component %u)" % (
         self.master.target_system, self.master.target_component))
-        self.command = 1
+        self.command = None
 
     def run(self):
+        print("start running navigator")
         while not self.continue_flag.is_cancelled :
             match self.command:
-                case 1: self.basic_nav()
+                case 1:
+                    self.basic_nav()
                 case 2:
                     self.land()
-                case _: "waiting for command"
+                case _:
+                    print("waiting for command")
 
     def command(self, int_val):
         self.command = int_val
@@ -103,10 +107,28 @@ class Navigator(threading.Thread):
 
     def land(self):
         self.textLogger.log(">>>>>>>>>>START LANDING SEQUENCE<<<<<<<<<<<<<")
-        self.cpt = 0
-        arrived = False
-        while not arrived:
+        # set land mode
+        self.textLogger.log("Start landing")
+        self.master.mav.command_long_send(self.master.target_system, self.master.target_component,
+                                          mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
+                                          1, 9, 0, 0, 0, 0, 0, 0)
+
+        self.landed = False
+        while (not self.landed):
+            '''
+            #checking if motir are disarmed
+            msg = self.master.recv_match(type='STATUSTEXT', blocking=True)
+
+            if msg is not None:
+                self.textLogger.log("{}".format(msg))
+                if msg.text == "Disarming motors":
+                    self.command = None
+                    self.landed = True
+            '''
+            # print("Landing target is {}".format(self.landing_target_data_stack))
+
             if self.landing_target_data_stack is not None:
+
                 # print("Landing target is {}".format(self.landing_target_data_stack))
                 try:
                     data = self.landing_target_data_stack
@@ -131,11 +153,7 @@ class Navigator(threading.Thread):
                         angle_rate_used = 1.0
                         using = "Small"
                     if t_vec_used is not None:
-                        '''save working on aruco
-                        height = tvec[0][0][2]
-                        forward = 0.25-tvec[0][0][1]
-                        right = tvec[0][0][0]+0.25
-                        '''
+
                         height = t_vec_used[2][0]
                         forward = -t_vec_used[1][0]
                         right = t_vec_used[0][0]
@@ -164,24 +182,34 @@ class Navigator(threading.Thread):
                                 mavutil.mavlink.LANDING_TARGET_TYPE_VISION_FIDUCIAL,
                                 1)
 
-                            if self.cpt == 10:
-                                yaw = angles[2]
-                                direction = 1
-                                if yaw < 0:
-                                    yaw = abs(yaw)
-                                    direction = -1
-
-                                self.master.mav.command_long_send(self.master.target_system,
-                                                                  self.master.target_component,
-                                                                  mavutil.mavlink.MAV_CMD_CONDITION_YAW, 0,
-                                                                  int(yaw), angle_rate_used, direction, 1, 0, 0, 0, 0)
-                                self.cpt = 0
-                            self.cpt += 1
+                            self.yaw_alignment(angles[2],angle_rate_used)
 
                     else:
                         print("t_vec used is NOne")
                 except queue.Empty:
                     print("queue is empty")
+        self.textLogger.log(">>>>>>>>>>END LANDING SEQUENCE<<<<<<<<<<<<<")
+
+    def yaw_alignment(self, z,angle_rate_used):
+        # Send yau aligment message every 10 seconds
+
+        now = time.time()
+        interval = now-self.last_called
+
+        if (interval > 10):
+            print(interval)
+            self.last_called = time.time()
+            yaw = z
+            direction = 1
+            if yaw < 0:
+                yaw = abs(yaw)
+                direction = -1
+
+            self.master.mav.command_long_send(self.master.target_system,
+                                              self.master.target_component,
+                                              mavutil.mavlink.MAV_CMD_CONDITION_YAW, 0,
+                                              int(yaw), angle_rate_used, direction, 1, 0, 0, 0, 0)
+
 
     def basic_nav(self):
         # move_to_frd_ned(0,0,-50)
@@ -190,13 +218,13 @@ class Navigator(threading.Thread):
                                        b'RNGFND1_TYPE', 10.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
-                                       b'LAND_SPEED', 100.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+                                       b'LAND_SPEED', 300.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
                                        b'LAND_ALT_LOW', 400.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.master.mav.param_set_send(self.master.target_system, self.master.target_component,
-                                       b'LAND_SPEED_HIGH', 1000.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+                                       b'LAND_SPEED_HIGH', 2000.0, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
 
         self.textLogger.log("guided mode")
 
@@ -224,16 +252,12 @@ class Navigator(threading.Thread):
         self.textLogger.log("travel to NED dest.")
         self.move_to_frd_ned(1, 2, -20)
 
-        self.textLogger.log("rotate random degrees CCW")
-        import random
+        # self.textLogger.log("rotate random degrees CCW")
+        # import random
         # rot_rand = random.randint(0, 180)
         # self.textLogger.log("ramdom value : {}".format(rot_rand))
         # self.rotate_cc_to(rot_rand, 1)
 
-        # set land mode
-        self.textLogger.log("Start landing")
-        self.master.mav.command_long_send(self.master.target_system, self.master.target_component,
-                                          mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
-                                          1, 9, 0, 0, 0, 0, 0, 0)
 
-        self.land()
+
+        self.command = None
