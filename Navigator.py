@@ -231,12 +231,14 @@ class Navigator(threading.Thread):
                                           mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
                                           1, 4, 0, 0, 0, 0, 0, 0)
         self.textLogger.log("arm")
-
+        self.master.arducopter_arm()
+        self.master.motors_armed_wait()
         # ARM
+        '''
         self.master.mav.command_long_send(self.master.target_system, self.master.target_component,
                                           mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0,
                                           1, 0, 0, 0, 0, 0, 0, 0)
-
+        '''
         # takeoff 20
         self.textLogger.log("send takeoff")
         self.master.mav.command_long_send(self.master.target_system, self.master.target_component,
