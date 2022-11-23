@@ -71,9 +71,8 @@ class LandingTargetDetector():
 
             if len(self.source_image_stack) > 0 :
                 # print("stck length{}".format(len(self.stack)))
-                response_image = self.source_image_stack.pop()
-                np_response_image = np.asarray(bytearray(response_image), dtype="uint8")
-                decoded_frame = cv2.imdecode(np_response_image, cv2.IMREAD_COLOR)
+                decoded_frame = self.source_image_stack.pop()
+
                 if decoded_frame is not None:
                     decoded_frame_gray =  cv2.cvtColor(decoded_frame, cv2.COLOR_BGR2GRAY)
 

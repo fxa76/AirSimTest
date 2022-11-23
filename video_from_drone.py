@@ -1,6 +1,9 @@
 import airsim
 import threading
+import numpy as np
+import cv2
 from cancellationToken import CancellationToken
+
 
 class VideoCapture:
 
@@ -23,8 +26,11 @@ class VideoCapture:
 
         while not self.continue_flag.is_cancelled:
             response_image = self.client.simGetImage(CAMERA_NAME, IMAGE_TYPE)
-            self.stack.append(response_image)
-            #time.sleep(0.2)
+            np_response_image = np.asarray(bytearray(response_image), dtype="uint8")
+            decoded_frame = cv2.imdecode(np_response_image, cv2.IMREAD_COLOR)
+            if decoded_frame is not None:
+                self.stack.append(decoded_frame)
+                #time.sleep(0.2)
 
 
 if __name__ == '__main__':
