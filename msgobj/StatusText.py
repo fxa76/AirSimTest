@@ -3,6 +3,6 @@ class StatusText:
         self.text = None
 
     def update(self, mavpackeftype_statustext: dict):
-        print("Statustext updated : {}".format(mavpackeftype_statustext))
+        # print("Statustext updated : {}".format(mavpackeftype_statustext))
         self.text = mavpackeftype_statustext['text']
 

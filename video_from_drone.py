@@ -2,13 +2,13 @@ import airsim
 import threading
 import numpy as np
 import cv2
-from cancellationToken import CancellationToken
+from msgobj.cancellationToken import CancellationToken
 
 
 class VideoCapture:
 
-    def __init__(self,continue_flag,stack ):
-        self.continue_flag = continue_flag
+    def __init__(self,stack ):
+        self.continue_flag = CancellationToken()
         self.stack = stack
         simclient = airsim.MultirotorClient()
         simclient.confirmConnection()
@@ -18,7 +18,7 @@ class VideoCapture:
         thread.start()
 
     def __del__(self):
-        print("calling destructor")
+        print("video from drone stopped")
 
     def start(self):
         CAMERA_NAME = 'down'  # 'high_res'
@@ -34,15 +34,13 @@ class VideoCapture:
 
 
 if __name__ == '__main__':
-    from landingTargetDetector import LandingTargetDetector
     import time
 
     source_image_stack = []
-    target_data_stack = []
-    analyzed_image_stack = []
     continue_flag = CancellationToken()
-    capture = VideoCapture(continue_flag,source_image_stack)
-    detector = LandingTargetDetector(continue_flag,source_image_stack,target_data_stack,analyzed_image_stack)
-    time.sleep(10)
+    capture = VideoCapture(source_image_stack)
+    time_len= 10
+    time.sleep(time_len)
+    print("number of images stored after {} sec: {}".format(time_len, len(source_image_stack)))
     continue_flag.cancel()
     print("continue set to False")

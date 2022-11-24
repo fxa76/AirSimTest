@@ -6,11 +6,11 @@ from pymavlink import mavutil
 
 class Drone(metaclass=SingletonMeta):
 
-    def __init__(self, address: str) -> None:
-        self.address = address
+    def __init__(self) -> None:
+
         # Create the connection
-        self.master = mavutil.mavlink_connection(self.address
-           )  # in Arducopter cmd type: output add 192.168.1.18:14560
+        self.master = mavutil.mavlink_connection(
+           "udp:192.168.1.30:14560")  # in Arducopter cmd type: output add 192.168.1.18:14560
         # Wait a heartbeat before sending commands
         print("Waiting for heart beat")
         self.master.wait_heartbeat()

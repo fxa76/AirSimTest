@@ -11,32 +11,18 @@ import threading
 import numpy as np
 
 from msgobj.Drone import Drone
+from msgobj.cancellationToken import CancellationToken
 
 class Navigator(threading.Thread):
-    def __init__(self, continue_flag, landing_target_data_stack, textLogger):
+
+    def __init__(self, landing_target_data_stack, textLogger):
         super(Navigator, self).__init__()
         self.last_called = time.time()
-        self.continue_flag = continue_flag
+        self.continue_flag = CancellationToken()
         self.landing_target_data_stack = landing_target_data_stack
         self.textLogger = textLogger
-        '''
-        self.textLogger.log(">>CONNECTING TO DRONE<<")
-        self.master = mavutil.mavlink_connection(
-            "udp:192.168.1.30:14560")  # in Arducopter cmd type: output add 192.168.1.18:14560
-
-        self.master.mav.ping_send(
-            int(time.time() * 1e6),  # Unix time in microseconds
-            0,  # Ping number
-            0,  # Request ping of all systems
-            0  # Request ping of all components
-        )
-        self.textLogger.log(">>WAITING FOR HEARTBEAT<<")
-        self.master.wait_heartbeat()
-        self.textLogger.log("Heartbeat from system (system %u component %u)" % (self.master.target_system, self.master.target_component))
-        '''
-        self.drone = Drone("udpin:192.168.1.30:14560")
+        self.drone = Drone()
         self.master = self.drone.master
-
         self.command = None
 
     def run(self):
@@ -122,7 +108,7 @@ class Navigator(threading.Thread):
 
         self.landed = False
         while (not self.landed):
-            if (self.drone.positionNed.z>-0.2):
+            if (self.drone.positionNed.z is not None and self.drone.positionNed.z>-0.2):
                 self.landed = True
 
             time.sleep(0.01)
@@ -138,7 +124,7 @@ class Navigator(threading.Thread):
             '''
             # print("Landing target is {}".format(self.landing_target_data_stack))
 
-            if self.landing_target_data_stack is not None:
+            if self.landing_target_data_stack.isValid :
 
                 # print("Landing target is {}".format(self.landing_target_data_stack))
                 try:
@@ -196,9 +182,15 @@ class Navigator(threading.Thread):
                             self.yaw_alignment(angles[2],angle_rate_used)
 
                     else:
-                        print("t_vec used is NOne")
-                except queue.Empty:
-                    print("queue is empty")
+                        #print("t_vec used is NOne")
+                        pass
+
+                except Exception as err:
+                    print("Error {}".format(err))
+            else:
+                # print("no valid target")
+                pass
+
         self.textLogger.log(">>>>>>>>>>END LANDING SEQUENCE<<<<<<<<<<<<<")
         self.command = None
 
@@ -272,4 +264,4 @@ class Navigator(threading.Thread):
 
 
 
-        self.command = None
+        self.command = 2

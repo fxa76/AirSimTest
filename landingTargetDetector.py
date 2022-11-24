@@ -2,18 +2,16 @@ import threading
 import time
 from pupil_apriltags import Detector
 import cv2
-import numpy as np
-import time
-import imutils
-
-from findHomographyORB_GPU import find_homography
-from arucode_decoder import Arucode_Decoder
+from msgobj.cancellationToken import CancellationToken
+from landing_target import LandingTarget
+from video_from_drone import VideoCapture
+from textLogger import TextLogger
 
 class LandingTargetDetector():
-    def __init__(self,continue_flag, source_image_stack,target_data_stack,analyzed_img_stack):
-        self.continue_flag = continue_flag
+    def __init__(self, source_image_stack, target_data, analyzed_img_stack):
+        self.continue_flag = CancellationToken()
         self.source_image_stack = source_image_stack
-        self.target_data_stack = target_data_stack
+        self.target_data_stack = target_data
         self.analyzed_img_stack = analyzed_img_stack
 
         #self.decoder = Arucode_Decoder()
@@ -40,7 +38,7 @@ class LandingTargetDetector():
         thread.start()
 
     def __del__(self):
-        print("calling destructor")
+        print("Landing target detector stopped")
 
     def draw_contour(self,tag,decoded_frame):
         # print(tag_big)
@@ -101,12 +99,14 @@ class LandingTargetDetector():
                         self.target_data_stack.t_vec_small = t_vec_small
                         self.target_data_stack.r_vec_big = r_vec_big
                         self.target_data_stack.r_vec_small = r_vec_small
+                        self.target_data_stack.isValid = True
                         #print("target set to {}".format(self.target_data_stack))
                     else:
                         self.target_data_stack.t_vec_big = None
                         self.target_data_stack.t_vec_small = None
                         self.target_data_stack.r_vec_big = None
                         self.target_data_stack.r_vec_small = None
+                        self.target_data_stack.isValid = False
 
                     if (decoded_frame is None):
                         print("image is none")
@@ -120,3 +120,22 @@ class LandingTargetDetector():
                             cv2.destroyAllWindows()
                             exit(0)
                         '''
+if __name__ == '__main__':
+    import time
+
+    source_image_stack = []
+    landing_target_data_stack = LandingTarget()
+    analyzed_img_stack = []
+    message_stack = []
+
+    continue_flag = CancellationToken()
+
+    textLogger = TextLogger(message_stack)
+    capture = VideoCapture(source_image_stack)
+    landingTargetDetector = LandingTargetDetector(source_image_stack, landing_target_data_stack, analyzed_img_stack)
+
+    time_len= 10
+    time.sleep(time_len)
+    print("number of images stored after {} sec: {}".format(time_len, len(source_image_stack)))
+    continue_flag.cancel()
+    print("continue set to False")
