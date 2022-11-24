@@ -136,13 +136,13 @@ class VideoUpdateThread(QThread):
     def run(self):
 
         while not self.continue_flag.is_cancelled:
+            time.sleep(0.01)
             # print("updating video")
             if len(self.analyzed_img_stack) > 0:
                 qimage = self.window.convert_to_qpixmap_color(self.analyzed_img_stack.pop())
                 self.window.image_view.setPixmap(QPixmap.fromImage(qimage))
 
 
-            time.sleep(0.01)
 
 
 class MessageUpdateThread(QThread):
@@ -155,6 +155,8 @@ class MessageUpdateThread(QThread):
     def run(self):
 
         while not self.continue_flag.is_cancelled:
+            time.sleep(0.01)
+
             if len(self.message_stack) > 0:
                 msg = self.message_stack.pop()
                 self.window.status_text.append(msg)
@@ -169,6 +171,8 @@ class MessageUpdateThread(QThread):
             self.window.statustext.setText("Status: {}".format(self.window.drone.statustext.text))
             if ( self.window.landing_target_data is not None):
                 self.window.button_land.setText("Landing : target detected {}".format(self.window.landing_target_data.isValid) )
+
+
 
 if __name__ == '__main__':
     cancellationToken = CancellationToken()

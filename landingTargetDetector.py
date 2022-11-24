@@ -66,7 +66,7 @@ class LandingTargetDetector():
     def start(self):
         seq = 0
         while not self.continue_flag.is_cancelled:
-
+            time.sleep(0.01)
             if len(self.source_image_stack) > 0 :
                 # print("stck length{}".format(len(self.stack)))
                 decoded_frame = self.source_image_stack.pop()

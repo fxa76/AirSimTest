@@ -3,7 +3,7 @@ from views import StartWindow
 from move_land import Navigator, TextLogger
 from video_from_drone import VideoCapture
 from landingTargetDetector import LandingTargetDetector
-from cancellationToken import CancellationToken
+from msgobj.cancellationToken import CancellationToken
 
 if __name__ == '__main__':
     from landing_target import LandingTarget
