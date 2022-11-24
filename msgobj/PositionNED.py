@@ -17,4 +17,7 @@ class PositionNED():
         self.vx = mavpackeftype_LOCAL_POSITION_NED['vx']
         self.vy = mavpackeftype_LOCAL_POSITION_NED['vy']
         self.vz = mavpackeftype_LOCAL_POSITION_NED['vz']
-        print("Position ned updated")
+        #print("Position ned updated")
+
+    def __repr__(self):
+        return "x: {}, y: {}, z:{}".format(self.x,self.y,self.z)

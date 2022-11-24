@@ -4,10 +4,13 @@ import time
 # import os
 # os.environ['MAVLINK20']='1'
 import queue
+import math
 
 from pymavlink import mavutil
 import threading
 import numpy as np
+
+from msgobj.Drone import Drone
 
 class Navigator(threading.Thread):
     def __init__(self, continue_flag, landing_target_data_stack, textLogger):
@@ -16,7 +19,7 @@ class Navigator(threading.Thread):
         self.continue_flag = continue_flag
         self.landing_target_data_stack = landing_target_data_stack
         self.textLogger = textLogger
-
+        '''
         self.textLogger.log(">>CONNECTING TO DRONE<<")
         self.master = mavutil.mavlink_connection(
             "udp:192.168.1.30:14560")  # in Arducopter cmd type: output add 192.168.1.18:14560
@@ -29,8 +32,11 @@ class Navigator(threading.Thread):
         )
         self.textLogger.log(">>WAITING FOR HEARTBEAT<<")
         self.master.wait_heartbeat()
-        self.textLogger.log("Heartbeat from system (system %u component %u)" % (
-        self.master.target_system, self.master.target_component))
+        self.textLogger.log("Heartbeat from system (system %u component %u)" % (self.master.target_system, self.master.target_component))
+        '''
+        self.drone = Drone("udpin:192.168.1.30:14560")
+        self.master = self.drone.master
+
         self.command = None
 
     def run(self):
@@ -42,7 +48,8 @@ class Navigator(threading.Thread):
                 case 2:
                     self.land()
                 case _:
-                    print("waiting for command")
+                    #print("waiting for command")
+                    pass
 
     def command(self, int_val):
         self.command = int_val
@@ -65,19 +72,18 @@ class Navigator(threading.Thread):
                                                                           0, 0, 0, 0, 0))
         arrived = False
         while not arrived:
-            msg = self.master.recv_match(type='LOCAL_POSITION_NED', blocking=True)  #
-            self.textLogger.log("{}".format(msg))
-            if self.between_two_numbers(msg.x, f - .1, f + 0.1) and self.between_two_numbers(msg.y, r - .1,
-                                                                                             r + 0.1) and self.between_two_numbers(
-                msg.z,
-                d - .1,
-                d + 0.1):
-                self.textLogger.log("arrived")
-                arrived = True
+            pos = self.drone.positionNed
+            if pos.z is not None:
+                if self.between_two_numbers(pos.x, f - .1, f + 0.1) and \
+                        self.between_two_numbers(pos.y, r - .1, r + 0.1) and \
+                        self.between_two_numbers( pos.z, d - .1, d + 0.1):
+                    self.textLogger.log("arrived")
+                    arrived = True
+            time.sleep(0.01)
 
     def rotate_cc_to(self, rotation_z, direction):
         self.textLogger.log("rotating")
-        msg = self.master.recv_match(type='ATTITUDE', blocking=True)
+        msg = self.drone.attitude
         start_yaw = math.degrees(msg.yaw)
         self.textLogger.log("start yaw {}".format(start_yaw))
 
@@ -93,7 +99,7 @@ class Navigator(threading.Thread):
 
         arrived = False
         while not arrived:
-            msg = self.master.recv_match(type='ATTITUDE', blocking=False)
+            msg = self.drone.attitude
             if msg is not None:
                 current_yaw = math.degrees(msg.yaw)
                 if current_yaw > 180:
@@ -116,6 +122,10 @@ class Navigator(threading.Thread):
 
         self.landed = False
         while (not self.landed):
+            if (self.drone.positionNed.z>-0.2):
+                self.landed = True
+
+            time.sleep(0.01)
             '''
             #checking if motir are disarmed
             msg = self.master.recv_match(type='STATUSTEXT', blocking=True)
@@ -190,6 +200,7 @@ class Navigator(threading.Thread):
                 except queue.Empty:
                     print("queue is empty")
         self.textLogger.log(">>>>>>>>>>END LANDING SEQUENCE<<<<<<<<<<<<<")
+        self.command = None
 
     def yaw_alignment(self, z,angle_rate_used):
         # Send yau aligment message every 10 seconds
@@ -233,6 +244,7 @@ class Navigator(threading.Thread):
         self.textLogger.log("arm")
         self.master.arducopter_arm()
         self.master.motors_armed_wait()
+
         # ARM
         '''
         self.master.mav.command_long_send(self.master.target_system, self.master.target_component,

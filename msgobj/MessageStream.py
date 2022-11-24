@@ -1,24 +1,16 @@
 import time
 # Import mavutil
 from pymavlink import mavutil
-
+import pymavlink
 import threading
 import numpy as np
 
 class MessageStream(threading.Thread):
-    def __init__(self):
+    def __init__(self,theDrone):
         super(MessageStream, self).__init__()
-        # Create the connection
-        self.master = mavutil.mavlink_connection(
-            "udp:192.168.1.30:14560")  # in Arducopter cmd type: output add 192.168.1.18:14560
-        # Wait a heartbeat before sending commands
-        self.master.wait_heartbeat()
+        self.drone = theDrone
+        self.master = self.drone.master
 
-        from msgobj.Attitude import ATTITUDE
-        from msgobj.PositionNED import PositionNED
-
-        self.attitude = ATTITUDE()
-        self.positionNed = PositionNED()
 
     def request_message_interval(self,message_id: int, frequency_hz: float):
         """
@@ -44,29 +36,31 @@ class MessageStream(threading.Thread):
         self.request_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
 
         # Configure ATTITUDE message to be sent at 50Hz
-        self.request_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 50)
+        self.request_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 1)
 
         # Configure ATTITUDE message to be sent at 50Hz
-        self.request_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_LOCAL_POSITION_NED, 50)
+        self.request_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_LOCAL_POSITION_NED, 1)
 
 
         # Get some information !
         while True:
             try:
-                msg_dict = self.master.recv_match().to_dict()
-                if msg_dict['mavpackettype'] == 'ATTITUDE':
-                    self.attitude.update(msg_dict)
-                else:
-                    if msg_dict['mavpackettype'] == 'LOCAL_POSITION_NED':
-                        self.positionNed.update(msg_dict)
-                    else:
-                        print(msg_dict)
-                        
-            except:
-                print("error")
-                pass
-            time.sleep(0.01)
+                msg = self.master.recv_match(blocking=True)
+                if msg is not None:
+                    msg_dict = msg.to_dict()
+                    if msg_dict['mavpackettype'] == 'ATTITUDE':
+                        self.drone.attitude.update(msg_dict)
 
-if __name__ == '__main__':
-    msgStream = MessageStream()
-    msgStream.start()
+                    if msg_dict['mavpackettype'] == 'LOCAL_POSITION_NED':
+                        self.drone.positionNed.update(msg_dict)
+                        #print(msg_dict['z'])
+                    if msg_dict['mavpackettype'] == 'STATUSTEXT':
+                        self.drone.statustext.update(msg_dict)
+                        #print(msg_dict['z'])
+                    else:
+                        #print(msg_dict)
+                        pass
+
+            except Exception as err:
+                print("Error {}".format(err))
+                pass

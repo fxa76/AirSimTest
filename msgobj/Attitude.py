@@ -16,4 +16,4 @@ class ATTITUDE:
         self.rollspeed = mavpackeftype_ATTITUDE['rollspeed']
         self.pitchspeed = mavpackeftype_ATTITUDE['pitchspeed']
         self.yawspeed = mavpackeftype_ATTITUDE['yawspeed']
-        print("Attitude updated")
+        #print("Attitude updated")

@@ -1,18 +1,21 @@
+import time
+
 from PyQt5.QtGui import QImage, QPixmap, QPainter
 from PyQt5.QtCore import Qt, QThread, QTimer
 from PyQt5.QtWidgets import QMainWindow, QFormLayout, QWidget, QPushButton, QBoxLayout, QVBoxLayout, QApplication, \
-    QSlider, QLabel, QGridLayout, QGroupBox, QCheckBox, QSizePolicy, QTextEdit
+    QSlider, QLabel, QGridLayout, QGroupBox, QCheckBox, QSizePolicy, QTextEdit,QHBoxLayout
 
 import cv2
 import os
 import datetime
 import threading
-
+from msgobj.Drone import Drone
 
 class StartWindow(QMainWindow):
     def __init__(self,analyzed_img_stack,message_stack,navigator):
         super().__init__()
-
+        self.setWindowTitle("FXA Drone Ctrl")
+        self.drone = Drone("udp:192.168.1.30:14560")
         self.analyzed_img_stack = analyzed_img_stack
         self.message_stack = message_stack
         self.navigator = navigator
@@ -51,6 +54,29 @@ class StartWindow(QMainWindow):
 
         self.setCentralWidget(self.central_widget)
 
+        self.verticalGroupBoxMavData = QGroupBox("Mav Data")
+        layout_vertical_2 = QVBoxLayout()
+        self.horizontalGroupBox = QGroupBox("NED Position")
+        layoutHorizontal = QHBoxLayout()
+        self.mode = QLabel("Mode: ")
+        self.x = QLabel("x")
+        self.y = QLabel("y")
+        self.z = QLabel("z")
+        self.statustext =QLabel("Status")
+        layout_vertical_2.addWidget(self.mode)
+
+        layoutHorizontal.addWidget(self.x)
+        layoutHorizontal.addWidget(self.y)
+        layoutHorizontal.addWidget(self.z)
+
+        layout_vertical_2.addWidget(self.statustext)
+
+        self.horizontalGroupBox.setLayout(layoutHorizontal)
+        layout_vertical_2.addWidget(self.horizontalGroupBox)
+
+        self.verticalGroupBoxMavData.setLayout(layout_vertical_2)
+        self.layout.addWidget(self.verticalGroupBoxMavData)
+
         # set button and sliders actions
         self.button_takeoff.clicked.connect(self.takeoff_call_back)
         self.button_land.clicked.connect(self.land_call_back)
@@ -73,9 +99,8 @@ class StartWindow(QMainWindow):
         self.navigator.command = 2
 
     def land_done_call_back(self):
-        print("land_done_call_back")
-        self.navigator.landed = True
-        self.navigator.command = None
+        print("land_done_call_back : no IMPLEMENTATION")
+
 
     def convert_to_qpixmap_color(self, cv_img):
         cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
@@ -122,6 +147,17 @@ class VideoUpdateThread(QThread):
                 qimage = self.window.convert_to_qpixmap_color(self.analyzed_img_stack.pop())
                 self.window.image_view.setPixmap(QPixmap.fromImage(qimage))
 
+                if (self.window.drone.positionNed.x is not None):
+                    self.window.x.setText("x: {0:.2f}".format(self.window.drone.positionNed.x))
+                if self.window.drone.positionNed.y is not None:
+                    self.window.y.setText("y: {0:.2f}".format(self.window.drone.positionNed.y))
+                if self.window.drone.positionNed.z is not None:
+                    self.window.z.setText("z: {0:.2f}".format(self.window.drone.positionNed.z))
+                self.window.mode.setText("Mode: {}".format(self.window.drone.master.flightmode))
+                self.window.statustext.setText("Status: {}".format(self.window.drone.statustext.text))
+                #time.sleep(0.01)
+
+
 class MessageUpdateThread(QThread):
     def __init__(self, message_stack,window):
         super().__init__()
@@ -134,6 +170,7 @@ class MessageUpdateThread(QThread):
             if len(self.message_stack) > 0:
                 msg = self.message_stack.pop()
                 self.window.status_text.append(msg)
+                time.sleep(0.01)
 
 if __name__ == '__main__':
     app = QApplication([])
