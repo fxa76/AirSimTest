@@ -264,4 +264,4 @@ class Navigator(threading.Thread):
 
 
 
-        self.command = 2
+        self.command = None
