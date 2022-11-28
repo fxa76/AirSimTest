@@ -24,7 +24,7 @@ def cmd_takeoff(master,target, altitude):
 
 print(">>CONNECTING TO DRONE<<")
 
-master = mavutil.mavlink_connection("udp:192.168.1.18:14560") #in Arducopter cmd type: output add 192.168.1.18:14560
+master = mavutil.mavlink_connection("udp:192.168.1.30:14560") #in Arducopter cmd type: output add 192.168.1.18:14560
 
 master.mav.ping_send(
     int(time.time() * 1e6), # Unix time in microseconds

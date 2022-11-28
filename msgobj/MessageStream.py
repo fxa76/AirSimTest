@@ -5,11 +5,15 @@ import pymavlink
 import threading
 import numpy as np
 
+from msgobj.cancellationToken import CancellationToken
+
+
 class MessageStream(threading.Thread):
     def __init__(self,theDrone):
         super(MessageStream, self).__init__()
         self.drone = theDrone
         self.master = self.drone.master
+        #self.cancelToken = CancellationToken()
 
 
     def request_message_interval(self,message_id: int, frequency_hz: float):
@@ -36,14 +40,15 @@ class MessageStream(threading.Thread):
         self.request_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
 
         # Configure ATTITUDE message to be sent at 50Hz
-        self.request_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 1)
+        self.request_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 4)
 
         # Configure ATTITUDE message to be sent at 50Hz
-        self.request_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_LOCAL_POSITION_NED, 1)
+        self.request_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_LOCAL_POSITION_NED, 4)
 
 
         # Get some information !
-        while True:
+        while True:#self.cancelToken:
+            time.sleep(0.01)
             try:
                 msg = self.master.recv_match(blocking=True)
                 if msg is not None:

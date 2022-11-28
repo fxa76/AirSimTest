@@ -1,4 +1,4 @@
-class ATTITUDE:
+class Attitude:
     def __init__(self):
         self.time_boot_ms = None
         self.roll = None

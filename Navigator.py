@@ -254,7 +254,7 @@ class Navigator(threading.Thread):
         time.sleep(sleep_time)
 
         self.textLogger.log("travel to NED dest.")
-        self.move_to_frd_ned(1, 2, -20)
+        self.move_to_frd_ned(1, 2, -50)
 
         # self.textLogger.log("rotate random degrees CCW")
         # import random
