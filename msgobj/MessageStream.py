@@ -48,7 +48,7 @@ class MessageStream(threading.Thread):
 
         # Get some information !
         while True:#self.cancelToken:
-            time.sleep(0.01)
+            #DO NOT SLOW DOWN THIS THREAD removed time.sleep(0.01)
             try:
                 msg = self.master.recv_match(blocking=True)
                 if msg is not None:

@@ -11,7 +11,7 @@ class Drone(metaclass=SingletonMeta):
 
         # Create the connection
         self.master = mavutil.mavlink_connection(
-           "udp:192.168.1.30:14560",notimestamps=True, source_system=1, source_component=mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER, autoreconnect=True, force_connected=True,)  # in Arducopter cmd type: output add 192.168.1.18:14560
+           "udp:192.168.1.30:14560")#,notimestamps=True, source_system=1, source_component=mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER, autoreconnect=True, force_connected=True,)  # in Arducopter cmd type: output add 192.168.1.18:14560
         # Wait a heartbeat before sending commands
         print("Waiting for heart beat from drone")
         self.master.wait_heartbeat()
