@@ -5,6 +5,7 @@ from video_from_drone import VideoCapture
 from landingTargetDetector import LandingTargetDetector
 from msgobj.cancellationToken import CancellationToken
 
+
 if __name__ == '__main__':
     from landing_target import LandingTarget
 
