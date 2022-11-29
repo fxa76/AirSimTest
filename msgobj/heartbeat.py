@@ -5,7 +5,13 @@ from pymavlink import mavutil
 class Heartbeat(threading.Thread):
     def __init__(self,theDrone):
         super(Heartbeat, self).__init__()
-        self.master = theDrone.master
+        # Create the connection to the top-side computer as companion computer/autopilot
+        self.master = mavutil.mavlink_connection('udpout:192.168.1.30:14550', source_system=1, source_component=mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER)
+
+        # Send a message for QGC to read out loud
+        #  Severity from https://mavlink.io/en/messages/common.html#MAV_SEVERITY
+
+
 
     def run(self):
         while True:
@@ -18,7 +24,7 @@ class Heartbeat(threading.Thread):
                                    0,
                                    0,
                                    0)
-            #self.master.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_INFO, "hello".encode())
+            self.master.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE, "hello".encode())
             '''
             self.master.mav.obstacle_distance_send(
                 int(round(time.time() * 1000000)),  # us Timestamp (UNIX time or time since system boot)
@@ -32,18 +38,19 @@ class Heartbeat(threading.Thread):
                 12
                 # MAV_FRAME, vehicle-front aligned: https://mavlink.io/en/messages/common.html#MAV_FRAME_BODY_FRD
             )
-            
+           
             self.master.mav.command_long_send(
                 255, 0,
-                253,0,#mavutil.mavlink.MAVLink_statustext_message, 0,
+                253, 0,#  mavutil.mavlink.MAVLink_statustext_message, 0,
                 mavutil.mavlink.MAV_SEVERITY_ALERT,  #severity
-                b'hello', # text
+                "hello".encode(), # text
                 0, # id
                 0, # chunk id
                 0, #chunk seq
                 0,
                 0
             )
+ 
             msg = self.gcs.recv_match(blocking=False)
             if msg is not None:
                 msg_dict = msg.to_dict()
