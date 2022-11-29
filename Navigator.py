@@ -28,6 +28,7 @@ class Navigator(threading.Thread):
     def run(self):
         print("start running navigator")
         while not self.continue_flag.is_cancelled :
+            time.sleep(0.01)
             match self.command:
                 case 1:
                     self.basic_nav()
@@ -58,6 +59,7 @@ class Navigator(threading.Thread):
                                                                           0, 0, 0, 0, 0))
         arrived = False
         while not arrived:
+            time.sleep(0.01)
             pos = self.drone.positionNed
             if pos.z is not None:
                 if self.between_two_numbers(pos.x, f - .1, f + 0.1) and \
@@ -65,7 +67,7 @@ class Navigator(threading.Thread):
                         self.between_two_numbers( pos.z, d - .1, d + 0.1):
                     self.textLogger.log("arrived")
                     arrived = True
-            time.sleep(0.01)
+
 
     def rotate_cc_to(self, rotation_z, direction):
         self.textLogger.log("rotating")
@@ -85,6 +87,7 @@ class Navigator(threading.Thread):
 
         arrived = False
         while not arrived:
+            time.sleep(0.01)
             msg = self.drone.attitude
             if msg is not None:
                 current_yaw = math.degrees(msg.yaw)
@@ -108,10 +111,12 @@ class Navigator(threading.Thread):
 
         self.landed = False
         while (not self.landed):
+            time.sleep(0.01)
+
             if (self.drone.positionNed.z is not None and self.drone.positionNed.z>-0.2):
                 self.landed = True
 
-            time.sleep(0.01)
+
             '''
             #checking if motir are disarmed
             msg = self.master.recv_match(type='STATUSTEXT', blocking=True)
@@ -261,7 +266,5 @@ class Navigator(threading.Thread):
         # rot_rand = random.randint(0, 180)
         # self.textLogger.log("ramdom value : {}".format(rot_rand))
         # self.rotate_cc_to(rot_rand, 1)
-
-
 
         self.command = None
