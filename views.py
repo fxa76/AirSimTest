@@ -160,7 +160,6 @@ class MessageUpdateThread(QThread):
             if len(self.message_stack) > 0:
                 msg = self.message_stack.pop()
                 self.window.status_text.append(msg)
-                time.sleep(0.01)
             if (self.window.drone.positionNed.x is not None):
                 self.window.x.setText("x: {0:.2f}".format(self.window.drone.positionNed.x))
             if self.window.drone.positionNed.y is not None:
