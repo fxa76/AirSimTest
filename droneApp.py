@@ -5,10 +5,10 @@ from video_from_drone import VideoCapture
 #from video_from_usb_camera import VideoCapture
 from landingTargetDetector import LandingTargetDetector
 from msgobj.cancellationToken import CancellationToken
+from landing_target import LandingTarget
 
 
 if __name__ == '__main__':
-    from landing_target import LandingTarget
 
     source_images_stack = []
     landing_target_data = LandingTarget()
