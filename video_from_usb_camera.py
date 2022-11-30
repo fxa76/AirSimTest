@@ -1,9 +1,6 @@
 import airsim
 import threading
-import numpy as np
 import cv2
-import time
-
 from msgobj.cancellationToken import CancellationToken
 
 
