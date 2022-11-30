@@ -1,13 +1,14 @@
 import threading
-import time
-
-import imutils
 from pupil_apriltags import Detector
 import cv2
 from msgobj.cancellationToken import CancellationToken
 from landing_target import LandingTarget
 from video_from_drone import VideoCapture
 from textLogger import TextLogger
+
+import time
+import imutils
+
 
 class LandingTargetDetector():
     def __init__(self, source_image_stack, target_data, analyzed_img_stack):
