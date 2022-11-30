@@ -1,5 +1,7 @@
 import threading
 import time
+
+import imutils
 from pupil_apriltags import Detector
 import cv2
 from msgobj.cancellationToken import CancellationToken
@@ -120,6 +122,7 @@ class LandingTargetDetector():
                             cv2.destroyAllWindows()
                             exit(0)
                         '''
+
 if __name__ == '__main__':
     import time
 
