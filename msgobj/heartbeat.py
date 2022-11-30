@@ -24,7 +24,7 @@ class Heartbeat(threading.Thread):
                                    0,
                                    0,
                                    0)
-            self.master.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE, "hello".encode())
+            self.master.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_EMERGENCY, "hello".encode())
             '''
             self.master.mav.obstacle_distance_send(
                 int(round(time.time() * 1000000)),  # us Timestamp (UNIX time or time since system boot)
