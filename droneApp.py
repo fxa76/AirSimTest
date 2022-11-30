@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import QApplication
 from views import StartWindow
 from move_land import Navigator, TextLogger
-from video_from_drone import VideoCapture
-#from video_from_usb_camera import VideoCapture
+from video_from_drone import VideoCaptureAirsim
+from video_from_usb_camera import VideoCaptureUSB
 from landingTargetDetector import LandingTargetDetector
 from msgobj.cancellationToken import CancellationToken
 from landing_target import LandingTarget
@@ -17,7 +17,7 @@ if __name__ == '__main__':
     continue_flag = CancellationToken()
 
     textLogger = TextLogger(message_stack)
-    capture = VideoCapture(source_images_stack)
+    capture = VideoCaptureAirsim(source_images_stack)
     landingTargetDetector = LandingTargetDetector(source_images_stack, landing_target_data, analyzed_img_stack)
     navigator = Navigator(landing_target_data, textLogger)
     navigator.start()

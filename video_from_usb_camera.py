@@ -4,7 +4,7 @@ import cv2
 from msgobj.cancellationToken import CancellationToken
 
 
-class VideoCapture:
+class VideoCaptureUSB:
 
     def __init__(self,stack ):
         self.continue_flag = CancellationToken()
@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     source_image_stack = []
     continue_flag = CancellationToken()
-    capture = VideoCapture(source_image_stack)
+    capture = VideoCaptureUSB(source_image_stack)
     time_len= 10
     time.sleep(time_len)
     print("number of images stored after {} sec: {}".format(time_len, len(source_image_stack)))
